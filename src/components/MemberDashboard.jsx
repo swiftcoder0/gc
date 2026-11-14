@@ -17,7 +17,7 @@ export default function MemberDashboard() {
   const firstName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : 'Member';
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-between p-6 sm:p-12 lg:p-16 text-white overflow-x-hidden">
+    <div className="relative h-[100dvh] flex flex-col justify-between p-4 sm:p-12 lg:p-16 text-white overflow-hidden">
       {/* Gotham Tower Background Video Loop */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-black">
         <video
@@ -34,8 +34,8 @@ export default function MemberDashboard() {
       </div>
 
       {/* Top Left: Large "Hi, [First Name]" greeting and member actions */}
-      <div className="max-w-lg space-y-4 text-left animate-fade-in pt-4 sm:pt-6 relative z-10">
-        <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight leading-none drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
+      <div className="max-w-lg space-y-2 sm:space-y-4 text-left animate-fade-in pt-3 sm:pt-6 relative z-10">
+        <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight leading-none drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
           Hi, {firstName}
         </h1>
 
@@ -61,7 +61,7 @@ export default function MemberDashboard() {
       </div>
 
       {/* Bottom Left: Announcements section with "GOTHAM COLLAGE" on top */}
-      <div className="max-w-md w-full text-left space-y-1.5 animate-fade-in pb-4 sm:pb-2 pt-12 sm:pt-0 relative z-10">
+      <div className="max-w-md w-full text-left space-y-1.5 animate-fade-in pb-4 sm:pb-2 pt-0 relative z-10">
         <p className="font-mono text-xs sm:text-sm tracking-[0.25em] text-white uppercase font-bold drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
           GOTHAM COLLAGE
         </p>
