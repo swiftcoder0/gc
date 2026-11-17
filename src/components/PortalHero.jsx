@@ -12,7 +12,7 @@ import ElevatorLobby from './ElevatorLobby';
  * - Zero blinding white flashes — direct seamless transition into the lobby
  */
 export default function PortalHero() {
-  const { openMemberLogin } = useAuth();
+  const { openMemberLogin, openAdminLogin } = useAuth();
 
   // State: support direct hash linking (e.g. #lobby, #floor-03, #floor-04)
   const [currentView, setCurrentView] = useState(() => {
@@ -336,8 +336,33 @@ export default function PortalHero() {
           ))}
         </nav>
 
-        {/* Right: Gold-outlined "Enter Portal" button (Rings glow brighter on hover + triggers fly-through on click) */}
-        <div className="flex items-center space-x-3">
+        {/* Right: Sign In (Member & Admin) + Gold-outlined "Enter Portal" button */}
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          {/* Sign In Dropdown */}
+          <div className="relative group">
+            <button
+              onClick={openMemberLogin}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white border border-white/15 hover:border-white/35 bg-black/50 hover:bg-black/80 transition-all cursor-pointer flex items-center space-x-1.5 shadow-md"
+            >
+              <span>Sign In</span>
+              <span className="text-[9px] text-[#71717a] group-hover:text-white transition-colors">▾</span>
+            </button>
+            <div className="absolute right-0 mt-2 w-44 py-1.5 bg-[#121215]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+              <button
+                onClick={openMemberLogin}
+                className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#F5B800] transition-colors cursor-pointer"
+              >
+                Member Portal
+              </button>
+              <button
+                onClick={openAdminLogin}
+                className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              >
+                Admin Console
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={triggerFlyThrough}
             onMouseEnter={() => setIsHoveringPortalButton(true)}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { config } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Web Audio Synthesizer for luxury elevator acoustics
@@ -105,23 +106,26 @@ class ElevatorAudioEngine {
 
 /**
  * ElevatorLobby — ONE Continuous Scene Lift
- * Strictly governed by SPEC (v2) and the Single Continuous Scene rules:
- * - The lift car remains visible and in the SAME place for the entire sequence.
- * - Never swaps to a different scene, image, or page layout.
- *
- * LAYERS (z-order):
- * 1) SHAFT WALLS: Left and right vertical dark wall strips with thin horizontal gold floor lines
- *    every 120px and SVG floor numbers (01-04) that scroll vertically during transit.
- * 2) LIFT CAR: Centred, ~40% viewport width, 70% height, thick dark metal frame,
- *    two sliding chrome doors, centered real logo (screen blend mode), thin vertical gold light strips.
- * 3) FLOOR DISPLAY: Small gold digital LED display above doors showing current floor.
- * 4) BUTTON PANEL: Slim panel on right of car frame with buttons 04, 03, 02, 01 only.
- * 5) TOP BAR: Logo and Join Now. No headline, no cards, no chips.
- *
- * STATE MACHINE (GSAP timeline per click, reversible):
- * IDLE -> CLOSING (0.8s) -> MOVING (~2.2s) -> ARRIVING (0.3s) -> OPENING (1s) -> REVEAL (1.5s) -> CONTENT -> RETURN -> IDLE.
+ * Strictly governed by SPEC (v2) and Latest Requirements:
+ * 1) BACKGROUND: Clean deep-black space (#0b0b0b) with canvas starfield
+ *    - ~140 stars (desktop) / 70 stars (phones) in 3 depth layers
+ *    - Mostly white with ~10% warm gold (#F5B800)
+ *    - IDLE: slow drift & gentle twinkling; dark vignette & faint warm glow behind lift
+ *    - MOVING: stars stretch into vertical streaks in direction of travel (ease in 0.5s, hold, ease out 0.5s)
+ *    - ARRIVAL: soft gold glow pulse behind lift
+ *    - Lightweight: requestAnimationFrame, DPR capped at 2, reduced-motion fallback
+ * 2) RETURN GESTURE:
+ *    - Double-click / double-tap anywhere on content area (ignoring links/buttons)
+ *    - Two-finger tap on touchscreens (touches start together & end within 300ms without moving)
+ *    - Pressing Escape
+ *    - Subtle hint for first 4 seconds only: "Double-tap to return to the lift"
+ *    - "Back to lift" button fallback preserved for accessibility
+ * 3) SIZE:
+ *    - Lift car 25% larger: ~24-28% viewport width and 78% viewport height, centered
+ *    - Button panel & floor display scale proportionally with the car
  */
 export default function ElevatorLobby({ onBackToPortal }) {
+  const { openMemberLogin, openAdminLogin } = useAuth();
   const audio = useMemo(() => new ElevatorAudioEngine(), []);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
@@ -150,11 +154,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
   const [activeFloorContent, setActiveFloorContent] = useState('01');
   const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
   const [selectedPillar, setSelectedPillar] = useState('BUILD');
+  const [showHint, setShowHint] = useState(false);
 
-  // DOM Refs for GSAP
+  // DOM Refs
   const sceneRootRef = useRef(null);
-  const shaftLeftTrackRef = useRef(null);
-  const shaftRightTrackRef = useRef(null);
+  const canvasRef = useRef(null);
+  const arrivalPulseRef = useRef(null);
   const carWrapperRef = useRef(null);
   const leftDoorRef = useRef(null);
   const rightDoorRef = useRef(null);
@@ -163,10 +168,23 @@ export default function ElevatorLobby({ onBackToPortal }) {
   const dingFlashRef = useRef(null);
   const doorwayGlowRef = useRef(null);
   const contentPortalRef = useRef(null);
-  const specksContainerRef = useRef(null);
 
-  // Shaft scroll current position
-  const shaftYRef = useRef(0);
+  // Motion physics ref for Canvas Starfield
+  const starMotionRef = useRef({
+    velocity: 0,   // 0 (idle) to 1 (full speed)
+    streak: 0,     // 0 (circle) to 1 (stretched line)
+    direction: 1,  // 1 = stars move down (going up); -1 = stars move up (going down)
+  });
+
+  // Touch gesture tracker for Return Gesture
+  const touchTrackRef = useRef({
+    twoFingerStart: null,
+    startX1: 0,
+    startY1: 0,
+    startX2: 0,
+    startY2: 0,
+    lastSingleTap: 0,
+  });
 
   // Toggle Sound safely
   const toggleSound = () => {
@@ -180,21 +198,154 @@ export default function ElevatorLobby({ onBackToPortal }) {
     }
   };
 
-  // Generate 4-floor buttons: 04, 03, 02, 01 only
+  // Four buttons: 04, 03, 02, 01 only
   const floorButtons = ['04', '03', '02', '01'];
 
-  // Dust specks for moving state
-  const dustSpecks = useMemo(() => {
-    return Array.from({ length: 14 }).map((_, i) => ({
-      id: i,
-      left: `${(15 + (i * 5.8) + (i % 3) * 4).toFixed(1)}%`,
-      top: `${(10 + (i * 6.5)).toFixed(1)}%`,
-      size: `${(i % 3) * 1.2 + 1.5}px`,
-      opacity: 0.2 + (i % 4) * 0.12,
-    }));
-  }, []);
+  // ==============================================================
+  // 1. CANVAS STARFIELD ENGINE (Lightweight, rAF, 3 depth layers)
+  // ==============================================================
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  // --- CORE GSAP TIMELINE ENGINE ---
+    let animId = null;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Star counts: ~140 on desktop, 70 on mobile
+    const targetCount = width >= 768 ? 140 : 70;
+    const stars = [];
+
+    // 3 depth layers: 0 = Far, 1 = Mid, 2 = Near
+    for (let i = 0; i < targetCount; i++) {
+      const layer = i % 3; // 0, 1, 2
+      const isGold = Math.random() < 0.10; // ~10% warm gold #F5B800
+      let baseRadius = 0.6;
+      let baseAlpha = 0.3;
+      let speedFactor = 0.35;
+
+      if (layer === 1) {
+        baseRadius = 1.1;
+        baseAlpha = 0.55;
+        speedFactor = 0.75;
+      } else if (layer === 2) {
+        baseRadius = 1.7;
+        baseAlpha = 0.85;
+        speedFactor = 1.35;
+      }
+
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        layer,
+        isGold,
+        radius: baseRadius,
+        baseAlpha,
+        alpha: baseAlpha,
+        speedFactor,
+        twinklePhase: Math.random() * Math.PI * 2,
+        twinkleSpeed: 0.015 + Math.random() * 0.03,
+      });
+    }
+
+    // Performance monitor
+    let lastTime = performance.now();
+    let lowFpsCount = 0;
+
+    const render = (time) => {
+      const delta = time - lastTime;
+      lastTime = time;
+
+      // Adjust star count if frame rate drops
+      if (delta > 36) { // below ~28 FPS
+        lowFpsCount++;
+        if (lowFpsCount > 30 && stars.length > 50) {
+          stars.splice(0, 10);
+          lowFpsCount = 0;
+        }
+      } else {
+        lowFpsCount = Math.max(0, lowFpsCount - 1);
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      const { velocity, streak, direction } = starMotionRef.current;
+      const isReduced = reducedMotion;
+
+      for (let i = 0; i < stars.length; i++) {
+        const star = stars[i];
+
+        // Twinkle update
+        star.twinklePhase += star.twinkleSpeed;
+        const twinkle = Math.sin(star.twinklePhase) * 0.25;
+        star.alpha = Math.max(0.12, Math.min(1.0, star.baseAlpha + twinkle));
+
+        // Movement update
+        if (!isReduced) {
+          // Base idle drift + Moving high-speed transit
+          const baseDrift = star.speedFactor * 0.12;
+          const travelSpeed = velocity * star.speedFactor * 26;
+          const vy = (baseDrift + travelSpeed) * direction;
+
+          star.y += vy;
+          if (star.y > height + 50) star.y = -40;
+          if (star.y < -50) star.y = height + 40;
+        }
+
+        const colorStr = star.isGold
+          ? `rgba(245, 184, 0, ${star.alpha})`
+          : `rgba(255, 255, 255, ${star.alpha})`;
+
+        // Moving streaks vs Idle points
+        if (!isReduced && streak > 0.05) {
+          const streakLength = streak * star.speedFactor * 36;
+          const tailY = star.y - streakLength * direction;
+
+          ctx.beginPath();
+          ctx.strokeStyle = colorStr;
+          ctx.lineWidth = Math.max(1, star.radius * (star.layer === 2 ? 1.4 : 1.1));
+          ctx.lineCap = 'round';
+          ctx.moveTo(star.x, tailY);
+          ctx.lineTo(star.x, star.y);
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fillStyle = colorStr;
+          ctx.fill();
+        }
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, [reducedMotion]);
+
+
+  // ==============================================================
+  // 2. CORE GSAP REVERSIBLE TIMELINE ENGINE
+  // ==============================================================
   const launchFloorTransition = (destFloor) => {
     if (isBusy) return;
     if (destFloor === currentFloor && stateName === 'CONTENT') return;
@@ -202,11 +353,14 @@ export default function ElevatorLobby({ onBackToPortal }) {
     setIsBusy(true);
     setTargetFloor(destFloor);
     setHighlightedFloor(destFloor);
+    setShowHint(false);
 
     const fromNum = parseInt(currentFloor, 10);
     const toNum = parseInt(destFloor, 10);
     const isGoingUp = toNum > fromNum;
-    const floorDistance = Math.abs(toNum - fromNum) || 1;
+
+    // Set direction in starfield: 1 = stars move down (going up); -1 = stars move up (going down)
+    starMotionRef.current.direction = isGoingUp ? 1 : -1;
 
     // Step sequence for digital counter
     const counterSequence = [];
@@ -222,20 +376,26 @@ export default function ElevatorLobby({ onBackToPortal }) {
         setActiveFloorContent(destFloor);
         setStateName('CONTENT');
         setIsBusy(false);
+
+        // Show "Double-tap to return to the lift" hint for first 4 seconds only
+        setShowHint(true);
+        setTimeout(() => {
+          setShowHint(false);
+        }, 4000);
       },
     });
 
-    // If currently in CONTENT, do RETURN first (shrink content back into doorway, brighten lift, close doors)
+    // If currently in CONTENT, run RETURN first (shrink content, brighten car, close doors)
     if (stateName === 'CONTENT') {
       tl.call(() => setStateName('RETURN'))
         .to(contentPortalRef.current, {
-          scale: 0.2,
+          scale: 0.22,
           opacity: 0,
           pointerEvents: 'none',
           duration: 0.8,
           ease: 'power3.in',
         })
-        .to([carWrapperRef.current, shaftLeftTrackRef.current?.parentElement, shaftRightTrackRef.current?.parentElement], {
+        .to(carWrapperRef.current, {
           opacity: 1.0,
           filter: 'brightness(1.0)',
           duration: 0.8,
@@ -249,7 +409,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         });
     }
 
-    // 1. CLOSING (0.8s) — If doors are open, slide shut; logo meets in middle
+    // 1. CLOSING (0.8s) — Doors slide shut, logo meets in middle
     tl.call(() => {
       setStateName('CLOSING');
       setDoorsOpen(false);
@@ -262,26 +422,33 @@ export default function ElevatorLobby({ onBackToPortal }) {
       onStart: () => audio.playDoorSlide(),
     });
 
-    // 2. MOVING (~2.2s) — Car stays centered, shaft walls scroll vertically
+    // 2. MOVING (~2.2s) — Car stays centered, stars stretch into streaks
     tl.call(() => {
       setStateName('MOVING');
       audio.playHum(2.2);
     });
 
-    // Moving duration
     const moveDuration = reducedMotion ? 0.8 : 2.2;
-    const travelDistancePx = floorDistance * 480;
-    const deltaY = isGoingUp ? travelDistancePx : -travelDistancePx;
-    const newShaftY = shaftYRef.current + deltaY;
-    shaftYRef.current = newShaftY;
 
     if (!reducedMotion) {
-      // Shaft scroll: ease in over 0.5s, constant, ease out over 0.5s (power2.inOut)
-      tl.to([shaftLeftTrackRef.current, shaftRightTrackRef.current], {
-        y: newShaftY,
-        duration: moveDuration,
-        ease: 'power2.inOut',
-      }, '+=0.05');
+      // Ease in speed & streak over 0.5s, hold, ease out over 0.5s
+      tl.to(starMotionRef.current, {
+        velocity: 1.0,
+        streak: 1.0,
+        duration: 0.5,
+        ease: 'power2.in',
+      })
+      .to(starMotionRef.current, {
+        velocity: 1.0,
+        streak: 1.0,
+        duration: 1.2,
+      })
+      .to(starMotionRef.current, {
+        velocity: 0.0,
+        streak: 0.0,
+        duration: 0.5,
+        ease: 'power2.out',
+      });
 
       // Car vibration by 1.5px
       tl.to(carWrapperRef.current, {
@@ -291,7 +458,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         yoyo: true,
         duration: 0.07,
         ease: 'sine.inOut',
-      }, '<');
+      }, '<-1.7');
 
       // Gold strips flickering
       tl.to([leftGoldStripRef.current, rightGoldStripRef.current], {
@@ -301,30 +468,9 @@ export default function ElevatorLobby({ onBackToPortal }) {
         duration: 0.08,
         ease: 'power1.inOut',
       }, '<');
-
-      // Faint dust specks drift past
-      if (specksContainerRef.current) {
-        tl.fromTo(specksContainerRef.current, {
-          y: isGoingUp ? -60 : 60,
-          opacity: 0,
-        }, {
-          y: isGoingUp ? 120 : -120,
-          opacity: 0.8,
-          duration: moveDuration,
-          ease: 'power1.inOut',
-        }, '<');
-      }
-    } else {
-      // Reduced motion: smooth fade sequence
-      tl.to([shaftLeftTrackRef.current, shaftRightTrackRef.current], {
-        opacity: 0.4,
-        duration: 0.4,
-        yoyo: true,
-        repeat: 1,
-      }, '+=0.05');
     }
 
-    // Intermediate floor counter updates during the move
+    // Digital counter updates through intermediate floors
     const stepDuration = moveDuration / (counterSequence.length || 1);
     counterSequence.forEach((val, idx) => {
       tl.call(() => {
@@ -332,7 +478,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
       }, null, `<+=${(idx * stepDuration).toFixed(2)}`);
     });
 
-    // 3. ARRIVING (0.3s) — Walls stop, gold "ding" flash
+    // 3. ARRIVING (0.3s) — Stars return to drift, gold "ding" flash + glow pulse behind lift
     tl.call(() => {
       setStateName('ARRIVING');
       setDisplayFloor(destFloor);
@@ -345,16 +491,31 @@ export default function ElevatorLobby({ onBackToPortal }) {
       }
     });
 
-    // Ding Flash
+    // Soft Gold Glow Pulse Behind the Lift on Arrival
+    if (arrivalPulseRef.current) {
+      tl.fromTo(arrivalPulseRef.current, {
+        opacity: 0,
+        scale: 0.85,
+      }, {
+        opacity: 0.75,
+        scale: 1.25,
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        ease: 'power2.out',
+      }, '<');
+    }
+
+    // Ding Screen Flash
     tl.fromTo(dingFlashRef.current, {
       opacity: 0,
     }, {
-      opacity: 0.7,
+      opacity: 0.65,
       duration: 0.15,
       yoyo: true,
       repeat: 1,
       ease: 'power2.out',
-    });
+    }, '<');
 
     // 4. OPENING (1.0s) — Doors slide apart, warm light spills out
     tl.call(() => {
@@ -380,7 +541,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
       ease: 'power2.out',
     }, '<');
 
-    // 5. REVEAL (1.5s) — Floor content renders inside doorway & scales up to fill the screen
+    // 5. REVEAL (1.5s) — Floor content renders inside doorway & scales up to fill screen
     tl.call(() => {
       setStateName('REVEAL');
     });
@@ -397,19 +558,22 @@ export default function ElevatorLobby({ onBackToPortal }) {
       ease: 'power3.out',
       transformOrigin: 'center center',
     })
-    // Lift car and shaft dim to 15% and stay faintly visible behind
-    .to([carWrapperRef.current, shaftLeftTrackRef.current?.parentElement, shaftRightTrackRef.current?.parentElement], {
+    // Lift car dims to 15% and stays faintly visible behind
+    .to(carWrapperRef.current, {
       opacity: 0.15,
-      filter: 'brightness(0.28)',
+      filter: 'brightness(0.35)',
       duration: 1.5,
       ease: 'power2.out',
     }, '<');
   };
 
-  // Return to Lift button clicked from content screen
+  // ==============================================================
+  // 3. RETURN GESTURE ENGINE (Double-tap, two-finger tap, Escape)
+  // ==============================================================
   const handleReturnToLift = () => {
-    if (isBusy) return;
+    if (isBusy || stateName !== 'CONTENT') return;
     setIsBusy(true);
+    setShowHint(false);
     setStateName('RETURN');
 
     const tl = gsap.timeline({
@@ -428,14 +592,14 @@ export default function ElevatorLobby({ onBackToPortal }) {
       duration: 1.0,
       ease: 'power3.in',
     })
-    // Lift car and shaft brighten back to 100%
-    .to([carWrapperRef.current, shaftLeftTrackRef.current?.parentElement, shaftRightTrackRef.current?.parentElement], {
+    // Lift car brightens back to 100%
+    .to(carWrapperRef.current, {
       opacity: 1.0,
       filter: 'brightness(1.0)',
       duration: 1.0,
       ease: 'power2.out',
     }, '<')
-    // Doors slide shut, logo meets in the middle (0.8s)
+    // Doors slide shut, logo meets in middle (0.8s)
     .to([leftDoorRef.current, rightDoorRef.current], {
       x: '0%',
       duration: 0.8,
@@ -449,9 +613,61 @@ export default function ElevatorLobby({ onBackToPortal }) {
     }, '<');
   };
 
-  // Keyboard Navigation: ArrowUp, ArrowDown, Enter
+  // Double-click handler on content area (disables selection, ignores buttons/links)
+  const handleContentDoubleClick = (e) => {
+    if (e.target.closest('a, button, input, textarea, select')) return;
+    e.preventDefault();
+    handleReturnToLift();
+  };
+
+  // Touch gesture handlers (Two-finger tap & mobile double-tap)
+  const handleTouchStart = (e) => {
+    if (e.target.closest('a, button, input, textarea, select')) return;
+    const now = Date.now();
+
+    // Two-finger tap detection: two touches start together
+    if (e.touches.length === 2) {
+      touchTrackRef.current.twoFingerStart = now;
+      touchTrackRef.current.startX1 = e.touches[0].clientX;
+      touchTrackRef.current.startY1 = e.touches[0].clientY;
+      touchTrackRef.current.startX2 = e.touches[1].clientX;
+      touchTrackRef.current.startY2 = e.touches[1].clientY;
+      return;
+    }
+
+    // Single touch double-tap detection
+    if (e.touches.length === 1) {
+      const timeSinceLast = now - touchTrackRef.current.lastSingleTap;
+      if (timeSinceLast < 320 && timeSinceLast > 50) {
+        handleReturnToLift();
+        touchTrackRef.current.lastSingleTap = 0;
+      } else {
+        touchTrackRef.current.lastSingleTap = now;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchTrackRef.current.twoFingerStart) {
+      const elapsed = Date.now() - touchTrackRef.current.twoFingerStart;
+      touchTrackRef.current.twoFingerStart = null;
+      // Ends within 300ms without moving
+      if (elapsed <= 300) {
+        handleReturnToLift();
+      }
+    }
+  };
+
+  // Keyboard navigation: ArrowUp, ArrowDown, Enter, Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (stateName === 'CONTENT') {
+          handleReturnToLift();
+        }
+        return;
+      }
+
       if (isBusy) return;
 
       if (e.key === 'ArrowUp') {
@@ -471,8 +687,6 @@ export default function ElevatorLobby({ onBackToPortal }) {
         if (highlightedFloor) {
           launchFloorTransition(highlightedFloor);
         }
-      } else if (e.key === 'Escape' && stateName === 'CONTENT') {
-        handleReturnToLift();
       }
     };
 
@@ -483,13 +697,40 @@ export default function ElevatorLobby({ onBackToPortal }) {
   return (
     <div
       ref={sceneRootRef}
-      className="relative w-full h-[100dvh] min-h-[640px] bg-[#070709] text-[#e8e8e6] overflow-hidden select-none font-sans"
+      className="relative w-full h-[100dvh] min-h-[640px] bg-[#0b0b0b] text-[#e8e8e6] overflow-hidden select-none font-sans"
     >
 
       {/* ==============================================================
-          LAYER 5: TOP BAR (Logo + Join Now only, nothing else)
+          LAYER 1: CLEAN DEEP-BLACK SPACE & CANVAS STARFIELD
+          - About 140 stars (desktop) / 70 stars (phones) in 3 depth layers
+          - Soft dark vignette and faint warm glow behind the lift
+          - Arrival soft gold glow pulse
       ============================================================== */}
-      <header className="absolute top-0 inset-x-0 z-50 h-16 px-6 sm:px-10 flex items-center justify-between border-b border-white/5 bg-[#070709]/75 backdrop-blur-md">
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 z-0 pointer-events-none"
+      />
+
+      {/* Very Soft Dark Vignette */}
+      <div className="absolute inset-0 pointer-events-none z-1 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)]" />
+
+      {/* Faint Warm Ambient Glow Behind the Lift */}
+      <div className="absolute inset-0 pointer-events-none z-1 bg-[radial-gradient(circle_at_50%_50%,rgba(245,184,0,0.08)_0%,transparent_50%)]" />
+
+      {/* Arrival Soft Gold Glow Pulse Behind the Lift */}
+      <div
+        ref={arrivalPulseRef}
+        className="absolute inset-0 pointer-events-none z-2 opacity-0 will-change-transform"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(245, 184, 0, 0.40) 0%, rgba(245, 184, 0, 0.12) 40%, transparent 68%)',
+        }}
+      />
+
+
+      {/* ==============================================================
+          TOP BAR (Logo + Join Now only, clean and minimal)
+      ============================================================== */}
+      <header className="absolute top-0 inset-x-0 z-50 h-16 px-6 sm:px-10 flex items-center justify-between border-b border-white/5 bg-[#0b0b0b]/60 backdrop-blur-md">
         {/* Left: Real Logo + GOTHAM COLLAGE */}
         <div className="flex items-center space-x-3">
           <div className="w-7 h-7 rounded-md overflow-hidden bg-black/80 border border-white/15 p-0.5 flex items-center justify-center shadow-md">
@@ -500,8 +741,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
           </span>
         </div>
 
-        {/* Right: Sound Toggle + Join Now */}
-        <div className="flex items-center space-x-4">
+        {/* Right: Sound Toggle + Sign In (Member & Admin) + Join Now */}
+        <div className="flex items-center space-x-3 sm:space-x-4">
           <button
             onClick={toggleSound}
             className={`px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
@@ -513,11 +754,36 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {soundEnabled ? '🔊 AUDIO ON' : '🔇 AUDIO OFF'}
           </button>
 
+          {/* Sign In Dropdown */}
+          <div className="relative group">
+            <button
+              onClick={openMemberLogin}
+              className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono uppercase tracking-wider border border-white/15 text-[#a1a1aa] hover:text-white hover:border-white/35 bg-black/50 transition-all cursor-pointer flex items-center space-x-1"
+            >
+              <span>Sign In</span>
+              <span className="text-[8px] text-[#71717a] group-hover:text-white transition-colors">▾</span>
+            </button>
+            <div className="absolute right-0 mt-2 w-40 py-1.5 bg-[#121215]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+              <button
+                onClick={openMemberLogin}
+                className="w-full text-left px-3.5 py-2 text-[11px] font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#F5B800] transition-colors cursor-pointer"
+              >
+                Member Portal
+              </button>
+              <button
+                onClick={openAdminLogin}
+                className="w-full text-left px-3.5 py-2 text-[11px] font-mono uppercase tracking-wider text-[#a1a1aa] hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              >
+                Admin Console
+              </button>
+            </div>
+          </div>
+
           {onBackToPortal && (
             <button
               onClick={onBackToPortal}
               disabled={isBusy}
-              className="text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white transition-colors cursor-pointer mr-2"
+              className="text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white transition-colors cursor-pointer mr-1"
             >
               ← Portal
             </button>
@@ -536,132 +802,37 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
 
       {/* ==============================================================
-          LAYER 1: SHAFT WALLS (Left and Right of the Lift Car)
-          Filled with thin horizontal gold floor lines every 120px and
-          SVG floor numbers (01-04) that scroll vertically.
-      ============================================================== */}
-      <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden transition-[opacity,filter] duration-700">
-        
-        {/* Left Shaft Wall Strip */}
-        <div
-          className="absolute left-0 top-0 bottom-0 overflow-hidden border-r border-[#1a1a24] bg-[#08080b]"
-          style={{ width: 'calc((100vw - min(40vw, 540px)) / 2)' }}
-        >
-          {/* Scrolling Vertical Track */}
-          <div
-            ref={shaftLeftTrackRef}
-            className="absolute inset-x-0 w-full will-change-transform"
-            style={{ top: '-1800px', height: '6000px' }}
-          >
-            {/* Repeating Pattern of 120px Gold Girder Lines & SVG Floor Numbers */}
-            {Array.from({ length: 48 }).map((_, idx) => {
-              const floorIdx = (idx % 4) + 1;
-              const isMajorFloor = idx % 4 === 0;
-
-              return (
-                <div
-                  key={`left-shaft-${idx}`}
-                  className="w-full h-[120px] relative border-b border-[#F5B800]/25 flex items-end px-4 sm:px-8 pb-2"
-                >
-                  {/* Vertical Guide Cable */}
-                  <div className="absolute top-0 bottom-0 right-10 w-[1px] bg-white/5" />
-                  <div className="absolute top-0 bottom-0 left-12 w-[1px] bg-white/5" />
-
-                  {/* SVG Floor Label every 4th line (480px) */}
-                  {isMajorFloor && (
-                    <div className="flex items-center space-x-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#F5B800]/60">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800]/70" />
-                      <span>SHAFT LVL 0{floorIdx}</span>
-                    </div>
-                  )}
-                  {!isMajorFloor && (
-                    <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">
-                      SECT {(idx * 120).toString().padStart(4, '0')}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Shaft Wall Strip */}
-        <div
-          className="absolute right-0 top-0 bottom-0 overflow-hidden border-l border-[#1a1a24] bg-[#08080b]"
-          style={{ width: 'calc((100vw - min(40vw, 540px)) / 2)' }}
-        >
-          {/* Scrolling Vertical Track */}
-          <div
-            ref={shaftRightTrackRef}
-            className="absolute inset-x-0 w-full will-change-transform"
-            style={{ top: '-1800px', height: '6000px' }}
-          >
-            {/* Repeating Pattern of 120px Gold Girder Lines & SVG Floor Numbers */}
-            {Array.from({ length: 48 }).map((_, idx) => {
-              const floorIdx = (idx % 4) + 1;
-              const isMajorFloor = idx % 4 === 0;
-
-              return (
-                <div
-                  key={`right-shaft-${idx}`}
-                  className="w-full h-[120px] relative border-b border-[#F5B800]/25 flex items-end justify-end px-4 sm:px-8 pb-2"
-                >
-                  {/* Vertical Guide Cable */}
-                  <div className="absolute top-0 bottom-0 left-10 w-[1px] bg-white/5" />
-                  <div className="absolute top-0 bottom-0 right-12 w-[1px] bg-white/5" />
-
-                  {/* SVG Floor Label every 4th line (480px) */}
-                  {isMajorFloor && (
-                    <div className="flex items-center space-x-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#F5B800]/60">
-                      <span>SHAFT LVL 0{floorIdx}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800]/70" />
-                    </div>
-                  )}
-                  {!isMajorFloor && (
-                    <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">
-                      SECT {(idx * 120).toString().padStart(4, '0')}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-      </div>
-
-
-      {/* ==============================================================
-          LAYER 2, 3, 4: LIFT CAR (Centred, 40% Width, 70% Height)
-          Thick metal frame, sliding chrome doors, centered real logo,
-          thin gold light strips, floor display, built-in button panel.
+          LAYER 2, 3, 4: LIFT CAR (~25% larger, centered)
+          - Width: ~24-28% of viewport width (lg:w-[26vw])
+          - Height: ~78% of viewport height (h-[78vh])
+          - Button panel & floor display scale proportionally with car
       ============================================================== */}
       <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
         
-        {/* Car Outer Centered Fixture */}
+        {/* Car Outer Centered Fixture (24-28% width, 78% height) */}
         <div
           ref={carWrapperRef}
-          className="relative w-[340px] sm:w-[400px] md:w-[460px] lg:w-[40vw] max-w-[540px] h-[70vh] min-h-[480px] max-h-[660px] flex items-center justify-center will-change-transform transition-[opacity,filter] duration-700 pointer-events-auto"
+          className="relative w-[320px] sm:w-[380px] md:w-[420px] lg:w-[26vw] xl:w-[26vw] min-w-[340px] max-w-[460px] h-[78vh] min-h-[520px] max-h-[760px] flex items-center justify-center will-change-transform transition-[opacity,filter] duration-700 pointer-events-auto"
         >
           {/* Thick Dark Metal Frame */}
-          <div className="relative w-full h-full rounded-xl border-[14px] sm:border-[18px] md:border-[20px] border-[#151518] bg-[#0a0a0c] shadow-[0_30px_90px_rgba(0,0,0,0.98),inset_0_4px_16px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col">
+          <div className="relative w-full h-full rounded-xl border-[16px] sm:border-[20px] border-[#151518] bg-[#0a0a0c] shadow-[0_30px_90px_rgba(0,0,0,0.98),inset_0_4px_16px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col">
 
             {/* ==========================================================
                 LAYER 3: FLOOR DISPLAY (above doors in transom)
             ========================================================== */}
-            <div className="relative w-full h-12 bg-[#0e0e11] border-b border-[#202025] flex items-center justify-between px-5 z-30">
-              <div className="flex items-center space-x-1 font-mono text-[11px]">
+            <div className="relative w-full h-13 bg-[#0e0e11] border-b border-[#202025] flex items-center justify-between px-5 z-30">
+              <div className="flex items-center space-x-1.5 font-mono text-xs">
                 <span className={`text-[#F5B800] font-bold ${stateName === 'MOVING' ? 'animate-pulse' : ''}`}>▲</span>
                 <span className="text-zinc-600 font-bold">▼</span>
               </div>
 
               {/* Digital LED Readout in Gold */}
-              <div className="px-3 py-0.5 rounded border border-[#F5B800]/40 bg-black/90 font-mono text-sm tracking-[0.25em] font-extrabold text-[#F5B800] shadow-[0_0_12px_rgba(245,184,0,0.35)]">
+              <div className="px-3.5 py-1 rounded border border-[#F5B800]/40 bg-black/95 font-mono text-sm sm:text-base tracking-[0.25em] font-extrabold text-[#F5B800] shadow-[0_0_14px_rgba(245,184,0,0.35)]">
                 LEVEL {displayFloor}
               </div>
 
-              <div className="text-[9px] font-mono tracking-widest text-[#71717a] uppercase">
-                GC VENTURE CAR
+              <div className="text-[10px] font-mono tracking-widest text-[#71717a] uppercase">
+                GC CAR
               </div>
             </div>
 
@@ -747,24 +918,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
               </div>
 
-              {/* Faint dust specks drifting during moving */}
-              <div ref={specksContainerRef} className="absolute inset-0 pointer-events-none z-18 opacity-0">
-                {dustSpecks.map((s) => (
-                  <div
-                    key={s.id}
-                    className="absolute rounded-full bg-[#F5B800] shadow-[0_0_6px_#F5B800]"
-                    style={{
-                      left: s.left,
-                      top: s.top,
-                      width: s.size,
-                      height: s.size,
-                      opacity: s.opacity,
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Center Seam */}
+              {/* Center Door Seam */}
               <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-black shadow-[0_0_6px_black] z-25 pointer-events-none" />
             </div>
 
@@ -772,15 +926,15 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
           {/* ==========================================================
               LAYER 4: BUTTON PANEL (built into right of car frame)
-              Only four buttons: 04, 03, 02, 01 from top to bottom.
+              Four buttons: 04, 03, 02, 01 from top to bottom.
           ========================================================== */}
-          <div className="absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 w-11 sm:w-13 py-4 rounded-r-xl border-y border-r border-white/10 bg-[#111114] shadow-2xl flex flex-col items-center space-y-3 z-35">
+          <div className="absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 w-11 sm:w-13 md:w-14 py-4 rounded-r-xl border-y border-r border-white/10 bg-[#111114] shadow-2xl flex flex-col items-center space-y-3 z-35">
             <div className="text-[7px] font-mono uppercase tracking-widest text-[#71717a]">
               PANEL
             </div>
 
             {/* Buttons 04, 03, 02, 01 */}
-            <div className="flex flex-col space-y-2 w-full px-1.5">
+            <div className="flex flex-col space-y-2.5 w-full px-1.5">
               {floorButtons.map((btnId) => {
                 const isSelected = targetFloor === btnId;
                 const isKeyFocused = highlightedFloor === btnId;
@@ -791,7 +945,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     onClick={() => launchFloorTransition(btnId)}
                     disabled={isBusy}
                     title={`Floor ${btnId}`}
-                    className={`w-full py-2 rounded-md font-mono text-xs font-bold transition-all duration-200 flex items-center justify-center cursor-pointer ${
+                    className={`w-full py-2.5 rounded-md font-mono text-xs font-bold transition-all duration-200 flex items-center justify-center cursor-pointer ${
                       isSelected
                         ? 'bg-[#F5B800] text-black shadow-[0_0_18px_rgba(245,184,0,0.7)] scale-105'
                         : isKeyFocused
@@ -815,18 +969,25 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
 
       {/* ==============================================================
-          LAYER 6: REVEAL & FLOOR CONTENT
-          Renders inside the doorway opening and scales up toward viewer
-          to fill the screen. Lift car and shaft remain visible behind.
+          REVEAL & FLOOR CONTENT (Scales up from doorway center)
+          With Return Gestures:
+          - Double-click or double-tap anywhere on content area
+          - Two-finger tap on touchscreens
+          - Escape key
+          - Subtle hint at bottom for first 4 seconds
+          - "Back to lift" button fallback
       ============================================================== */}
       <div
         ref={contentPortalRef}
-        className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden opacity-0"
+        onDoubleClick={handleContentDoubleClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden opacity-0 select-none"
         style={{ transform: 'scale(0.22)', transformOrigin: 'center center' }}
       >
         <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-12 lg:p-20 overflow-y-auto">
 
-          {/* Top Bar inside Content Screen: Back to Lift Button */}
+          {/* Top Bar inside Content Screen: Back to Lift Button & Floor Badge */}
           <div className="relative z-20 flex items-center justify-between w-full pt-14">
             <button
               onClick={handleReturnToLift}
@@ -1021,8 +1182,20 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
           </div>
 
-          <div className="relative z-20 pb-4 text-left text-[10px] font-mono text-[#71717a] uppercase tracking-widest">
-            GOTHAM COLLAGE FOUNDRY • ALL SPEC (v2) ARCHIVES VERIFIED
+          {/* Bottom Return Hint (Shown for first 4 seconds only) */}
+          <div className="relative z-20 pb-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono uppercase tracking-widest">
+            <span className="text-[#71717a]">
+              GOTHAM COLLAGE FOUNDRY • ALL SPEC (v2) ARCHIVES VERIFIED
+            </span>
+
+            {/* Subtle Hint: Double-tap to return to the lift */}
+            <div
+              className={`transition-opacity duration-700 pointer-events-none px-3.5 py-1.5 rounded-full border border-[#F5B800]/30 bg-black/80 text-[#F5B800] shadow-[0_0_12px_rgba(245,184,0,0.25)] ${
+                showHint ? 'opacity-90' : 'opacity-0'
+              }`}
+            >
+              Double-tap to return to the lift
+            </div>
           </div>
 
         </div>
@@ -1030,7 +1203,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
 
       {/* ==============================================================
-          DING FLASH OVERLAY (on arrival)
+          DING SCREEN FLASH OVERLAY (on arrival)
       ============================================================== */}
       <div
         ref={dingFlashRef}

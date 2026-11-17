@@ -40,9 +40,38 @@ export function AuthProvider({ children }) {
     checkSession();
   }, []);
 
-  const openMemberLogin = () => setCurrentScreen('member_login');
-  const openAdminLogin = () => setCurrentScreen('admin_login');
-  const backToWelcome = () => setCurrentScreen('welcome');
+  // Support direct hash navigation (#login, #member, #admin)
+  useEffect(() => {
+    const handleHash = () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('admin')) {
+        setCurrentScreen('admin_login');
+      } else if (hash.includes('member') || hash.includes('login') || hash.includes('signin')) {
+        setCurrentScreen('member_login');
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const openMemberLogin = () => {
+    if (typeof window !== 'undefined') window.location.hash = 'member';
+    setCurrentScreen('member_login');
+  };
+
+  const openAdminLogin = () => {
+    if (typeof window !== 'undefined') window.location.hash = 'admin';
+    setCurrentScreen('admin_login');
+  };
+
+  const backToWelcome = () => {
+    if (typeof window !== 'undefined' && (window.location.hash.includes('login') || window.location.hash.includes('admin') || window.location.hash.includes('member'))) {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+    setCurrentScreen('welcome');
+  };
 
   // Member Login
   const loginMember = async (memberId, password) => {

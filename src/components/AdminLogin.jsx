@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Lock, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export default function AdminLogin() {
-  const { loginAdmin, backToWelcome } = useAuth();
+  const { loginAdmin, backToWelcome, openMemberLogin } = useAuth();
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -129,6 +129,18 @@ export default function AdminLogin() {
             >
               {loading ? <span>Signing In...</span> : <span>Sign In as Admin</span>}
             </button>
+
+            {/* Toggle to Member Login */}
+            <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
+              <span className="text-[#656A7C]">Standard member?</span>
+              <button
+                type="button"
+                onClick={openMemberLogin}
+                className="text-[#9EA2B4] hover:text-[#F5B800] transition-colors uppercase tracking-wider cursor-pointer"
+              >
+                Member Portal →
+              </button>
+            </div>
           </form>
         </div>
       </div>
