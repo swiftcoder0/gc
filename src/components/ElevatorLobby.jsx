@@ -10,17 +10,19 @@ import { useAuth } from '../context/AuthContext';
 class ElevatorAudioEngine {
   constructor() {
     this.ctx = null;
-    this.enabled = false;
+    this.enabled = true;
   }
 
   enable() {
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) this.ctx = new AudioCtx();
-    }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    } catch (e) {}
     this.enabled = true;
   }
 
@@ -29,6 +31,7 @@ class ElevatorAudioEngine {
   }
 
   playDoorSlide() {
+    this.enable();
     if (!this.enabled || !this.ctx) return;
     try {
       const now = this.ctx.currentTime;
@@ -57,6 +60,7 @@ class ElevatorAudioEngine {
   }
 
   playHum(durationSec = 2.2) {
+    this.enable();
     if (!this.enabled || !this.ctx) return;
     try {
       const now = this.ctx.currentTime;
@@ -80,6 +84,7 @@ class ElevatorAudioEngine {
   }
 
   playDing() {
+    this.enable();
     if (!this.enabled || !this.ctx) return;
     try {
       const now = this.ctx.currentTime;
@@ -127,7 +132,20 @@ class ElevatorAudioEngine {
 export default function ElevatorLobby({ onBackToPortal }) {
   const { openMemberLogin, openAdminLogin } = useAuth();
   const audio = useMemo(() => new ElevatorAudioEngine(), []);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+
+  // Unlock and resume audio on user gesture
+  useEffect(() => {
+    audio.enable();
+    const unlock = () => audio.enable();
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [audio]);
 
   // prefers-reduced-motion
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -195,18 +213,6 @@ export default function ElevatorLobby({ onBackToPortal }) {
     startY2: 0,
     lastSingleTap: 0,
   });
-
-  // Toggle Sound safely
-  const toggleSound = () => {
-    if (!soundEnabled) {
-      audio.enable();
-      setSoundEnabled(true);
-      setTimeout(() => audio.playDing(), 150);
-    } else {
-      audio.disable();
-      setSoundEnabled(false);
-    }
-  };
 
   // Lift floor buttons with labels: 04 Vision, 03 Project 001, 02 Method, 01 Who we are
   const floorConfig = [
@@ -758,18 +764,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
           </span>
         </div>
 
-        {/* Right: Sound Toggle + Sign In (Member & Admin) + Join Now */}
+        {/* Right: Sign In (Member & Admin) + Join Now */}
         <div className="flex items-center space-x-3 sm:space-x-4">
-          <button
-            onClick={toggleSound}
-            className={`px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
-              soundEnabled
-                ? 'border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_10px_rgba(143,232,255,0.3)]'
-                : 'border-white/15 text-[#8a8a88] bg-black/50 hover:text-white'
-            }`}
-          >
-            {soundEnabled ? '🔊 AUDIO ON' : '🔇 AUDIO OFF'}
-          </button>
 
           {/* Sign In Dropdown */}
           <div className="relative group">
