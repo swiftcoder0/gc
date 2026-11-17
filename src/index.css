@@ -80,6 +80,42 @@ body {
   filter: hue-rotate(145deg) saturate(0.85) brightness(1.02);
 }
 
+/* Staggered Content Screen Lines Fade-In (0.5s each, slight upward move, 0.25s stagger) */
+@keyframes fadeUpLine {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fadeUpLine {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+.animate-fade-line-1 {
+  animation: fadeUpLine 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+  opacity: 0;
+}
+.animate-fade-line-2 {
+  animation: fadeUpLine 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.40s forwards;
+  opacity: 0;
+}
+.animate-fade-line-3 {
+  animation: fadeUpLine 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards;
+  opacity: 0;
+}
+.animate-fade-line-4 {
+  animation: fadeUpLine 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.90s forwards;
+  opacity: 0;
+}
+
 /* Cinematic Elevator Keyframes & Utilities */
 @keyframes liftCameraShake {
   0%, 100% { transform: translateY(0); }

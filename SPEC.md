@@ -15,13 +15,18 @@ COPY (use exactly)
 - Hero label: GOTHAM COLLAGE · STUDENT-LED VENTURE STUDIO (Inter 500, uppercase, 11-12px, letter-spacing 0.35em, grey, below the headline).
 - Hero button: Enter → (gold outline style and glow, smaller).
 - Hero constraints: Max 12 words visible in the hero. Sub line, "WELCOME TO GOTHAM COLLAGE" label, and "Scroll Down" hint removed. Positioned lower-centre over the path leading to the portal, preserving full visibility of portal rings and logo.
-- Elevator lobby: eyebrow THE ELEVATOR. Title: CHOOSE YOUR FLOOR. Sub: Explore the depths of Gotham. Floor panel shows 04 / 03 / 02 / 01 from top to bottom, up/down arrows beside the doors, the selected floor highlighted with 1px border and faint tint.
-- Floor 01 ABOUT GOTHAM: Gotham Collage is a student-led venture studio where ambitious students come together to build real-world projects. We believe in learning by building and creating things that solve real problems.
-- Floor 02 THE METHOD: BUILD (we collaborate as students and build projects from scratch) / IDENTIFY (after launching and validating projects, we identify people with the potential to become founders) / CREATE (we work with selected founders to turn successful projects into independent startups through equity partnerships). Line: We don't just teach entrepreneurship. We build real things.
-- Floor 03 PROJECT ARCHIVE: eyebrow PROJECT ARCHIVE (ice cyan). Title: PROJECT 001. Pill: STATUS : IN DEVELOPMENT. Text: Our first project is in the works. Stay tuned. Link: Learn More → (ice cyan). Scene: a dark faceted obsidian orb on a pedestal inside a glass display case with a thin glowing orbit ring and small blurred "classified file" panels. "Learn More" opens a small panel that says only: "Status: in development. Details will be shared when we launch." Do not invent any project details.
-- Floor 04 OUR VISION: eyebrow OUR VISION (ice cyan). Title: FROM STUDENTS TO BUILDERS. FROM BUILDERS TO FOUNDERS. Small line under it: We want to create an ecosystem where students don't have to wait for opportunities to build something meaningful. Button: Join The Movement → (ice cyan outline). Scene: the G inside a glass cube on a pedestal with an ice cyan ring of light and a city skyline.
-- Story (minimal, shown after floor 04): We are a group of students who want to build real projects rather than simply discuss ideas. We start by creating and launching projects together. When a project shows potential, we identify the right people to take it forward as founders. We are starting small, but our ambition is much bigger. We don't claim to be an investment fund or a venture capital firm. We are builders creating our own opportunities.
-- Final line: THE FUTURE IS BUILT, NOT WAITED FOR.
+- Elevator lobby: eyebrow THE ELEVATOR. Floor panel shows buttons with labels beside them: 04 Vision, 03 Project 001, 02 Method, 01 Who we are. Selected floor highlighted with 1px border and faint tint.
+- Floor 01: label WHO WE ARE. Headline: "We're people who build." Lines (one at a time): "Investors kept asking: 'Where's your team?'" / "So we became one." / "Gotham Collage is a student-led venture studio."
+- Floor 02: label THE METHOD. Three large words, each with one line: BUILD "Real projects, made together." / IDENTIFY "We spot who's ready to lead." / CREATE "Strong projects become startups, with equity partnerships." Hover or tap highlights one at a time. Closing line: "We don't teach entrepreneurship. We build it."
+- Floor 03: label PROJECT ARCHIVE. Headline "PROJECT 001". Pill "STATUS: IN DEVELOPMENT". Line: "Something is being built. You'll see it here first." Link "Learn More →" opens a small panel: "Status: in development. Details will be shared when we launch." Add no other details.
+- Floor 04: label OUR VISION. Headline "Students shouldn't have to wait to build." Line: "FROM STUDENTS TO BUILDERS. FROM BUILDERS TO FOUNDERS." Button "Join The Movement →".
+- Story section: four lines, each on its own full-height screen as you scroll, centred, large:
+  1) "We started small."
+  2) "A few minds. One rule: build, don't just talk."
+  3) "When a project shows promise, we back the people behind it."
+  4) "We're not an investment fund or a VC firm. We're builders."
+- Final screen: headline "THE FUTURE IS BUILT, NOT WAITED FOR." and button "Join The Movement →".
+- Style rules for all content screens: No paragraphs. Tiny uppercase label in accent colour (Inter 500, 11-12px, letter spacing 0.35em), one headline (Unbounded, mixing weight 200 and 700, max 8 words), then short lines. Lines fade in one after another (0.5s each, slight upward move, 0.25s stagger). Highlight the key word with the accent glow only. Respect prefers-reduced-motion. Max 30 words visible on any floor.
 - Footer: logo + GOTHAM COLLAGE on the left; centre text: Building Projects. Creating Founders. Launching Startups. Right: social icons.
 
 SOCIAL ICONS

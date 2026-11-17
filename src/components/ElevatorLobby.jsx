@@ -198,7 +198,13 @@ export default function ElevatorLobby({ onBackToPortal }) {
     }
   };
 
-  // Four buttons: 04, 03, 02, 01 only
+  // Lift floor buttons with labels: 04 Vision, 03 Project 001, 02 Method, 01 Who we are
+  const floorConfig = [
+    { id: '04', label: 'Vision' },
+    { id: '03', label: 'Project 001' },
+    { id: '02', label: 'Method' },
+    { id: '01', label: 'Who we are' },
+  ];
   const floorButtons = ['04', '03', '02', '01'];
 
   // ==============================================================
@@ -926,26 +932,27 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
           {/* ==========================================================
               LAYER 4: BUTTON PANEL (built into right of car frame)
-              Four buttons: 04, 03, 02, 01 from top to bottom.
+              Four buttons with floor labels:
+              04 Vision, 03 Project 001, 02 Method, 01 Who we are
           ========================================================== */}
-          <div className="absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 w-11 sm:w-13 md:w-14 py-4 rounded-r-xl border-y border-r border-white/10 bg-[#111114] shadow-2xl flex flex-col items-center space-y-3 z-35">
+          <div className="absolute -right-32 sm:-right-40 md:-right-44 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-44 py-4 px-2 rounded-r-xl border-y border-r border-white/10 bg-[#111114]/95 backdrop-blur-md shadow-2xl flex flex-col items-center space-y-3 z-35">
             <div className="text-[7px] font-mono uppercase tracking-widest text-[#71717a]">
               PANEL
             </div>
 
-            {/* Buttons 04, 03, 02, 01 */}
-            <div className="flex flex-col space-y-2.5 w-full px-1.5">
-              {floorButtons.map((btnId) => {
-                const isSelected = targetFloor === btnId;
-                const isKeyFocused = highlightedFloor === btnId;
+            {/* Buttons 04, 03, 02, 01 with labels */}
+            <div className="flex flex-col space-y-2.5 w-full">
+              {floorConfig.map((item) => {
+                const isSelected = targetFloor === item.id;
+                const isKeyFocused = highlightedFloor === item.id;
 
                 return (
                   <button
-                    key={btnId}
-                    onClick={() => launchFloorTransition(btnId)}
+                    key={item.id}
+                    onClick={() => launchFloorTransition(item.id)}
                     disabled={isBusy}
-                    title={`Floor ${btnId}`}
-                    className={`w-full py-2.5 rounded-md font-mono text-xs font-bold transition-all duration-200 flex items-center justify-center cursor-pointer ${
+                    title={`Floor ${item.id} - ${item.label}`}
+                    className={`w-full py-2 px-2.5 rounded-md font-mono transition-all duration-200 flex items-center justify-between cursor-pointer ${
                       isSelected
                         ? 'border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_15px_rgba(143,232,255,0.45)] scale-105'
                         : isKeyFocused
@@ -953,14 +960,17 @@ export default function ElevatorLobby({ onBackToPortal }) {
                         : 'border border-white/10 bg-[#161619] text-[#e8e8e6] hover:border-[#8FE8FF] hover:text-[#8FE8FF] hover:bg-[#8FE8FF]/10 hover:shadow-[0_0_12px_rgba(143,232,255,0.4)]'
                     }`}
                   >
-                    {btnId}
+                    <span className="font-bold text-xs">{item.id}</span>
+                    <span className={`text-[8px] sm:text-[9px] uppercase tracking-wider pl-1.5 truncate ${isSelected ? 'text-[#8FE8FF] font-semibold' : 'text-zinc-400'}`}>
+                      {item.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
             {/* Keycard Sensor Bar */}
-            <div className="w-5 h-1 rounded-full bg-[#8FE8FF]/50 shadow-[0_0_6px_#8FE8FF]" />
+            <div className="w-6 h-1 rounded-full bg-[#8FE8FF]/50 shadow-[0_0_6px_#8FE8FF]" />
           </div>
 
         </div>
@@ -1028,119 +1038,133 @@ export default function ElevatorLobby({ onBackToPortal }) {
           </div>
 
           {/* Main Floor Copy Area (Strictly from SPEC.md) */}
-          <div className="relative z-20 my-auto max-w-3xl flex flex-col space-y-6 text-left">
+          <div className="relative z-20 my-auto max-w-4xl flex flex-col space-y-6 text-left w-full">
             
-            {/* FLOOR 01: ABOUT GOTHAM */}
+            {/* FLOOR 01: WHO WE ARE */}
             {activeFloorContent === '01' && (
-              <div className="flex flex-col space-y-6 animate-fade-in">
-                <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
-                    ABOUT GOTHAM
-                  </span>
+              <div className="flex flex-col space-y-5 animate-fade-in max-w-2xl py-8">
+                {/* Tiny Label in Accent Colour: Inter 500, uppercase, 11-12px, letter spacing 0.35em */}
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF]">
+                  WHO WE ARE
                 </div>
 
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/80 border border-white/20 p-2 shadow-[0_0_25px_rgba(143,232,255,0.3)]">
-                  <img src="/images/gc-logo.png" alt="Gotham Collage Seal" className="w-full h-full object-contain" />
-                </div>
-
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-white leading-tight">
-                  STUDENT-LED VENTURE STUDIO
+                {/* Headline: "We're people who build." (Unbounded, mixing weight 200 and 700, max 8 words) */}
+                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                  <span className="font-[200] text-[#bdbdb8]">We're people </span>
+                  <span className="font-[700] text-[#e8e8e6]">who build.</span>
                 </h1>
 
-                <p className="font-sans text-base sm:text-lg lg:text-xl text-[#e8e8e6] leading-relaxed max-w-2xl font-light">
-                  Gotham Collage is a student-led venture studio where ambitious students come together to build real-world projects. We believe in learning by building and creating things that solve real problems.
-                </p>
+                {/* Lines (one at a time, 0.5s fade, slight upward move, 0.25s stagger) */}
+                <div className="space-y-3 pt-2 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed">
+                  <div className="animate-fade-line-1 text-[#bdbdb8]">
+                    Investors kept asking: "Where's your team?"
+                  </div>
+                  <div className="animate-fade-line-2 text-white">
+                    So we became <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>one.</span>
+                  </div>
+                  <div className="animate-fade-line-3 text-[#a1a1aa] text-sm sm:text-base">
+                    Gotham Collage is a student-led venture studio.
+                  </div>
+                </div>
               </div>
             )}
 
             {/* FLOOR 02: THE METHOD */}
             {activeFloorContent === '02' && (
-              <div className="flex flex-col space-y-6 animate-fade-in">
-                <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
-                    THE METHOD
-                  </span>
+              <div className="flex flex-col space-y-6 animate-fade-in max-w-3xl py-8">
+                {/* Tiny Label in Accent Colour: Inter 500, uppercase, 11-12px, letter spacing 0.35em */}
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF]">
+                  THE METHOD
                 </div>
 
-                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-tight text-white leading-tight">
-                  BUILD • IDENTIFY • CREATE
-                </h1>
-
-                {/* 3 Pillars */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                {/* Three large words, each with one line (BUILD, IDENTIFY, CREATE) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                   {[
                     {
                       key: 'BUILD',
-                      title: 'BUILD',
-                      text: 'We collaborate as students and build projects from scratch.',
+                      word: 'BUILD',
+                      line: 'Real projects, made together.',
                     },
                     {
                       key: 'IDENTIFY',
-                      title: 'IDENTIFY',
-                      text: 'After launching and validating projects, we identify people with the potential to become founders.',
+                      word: 'IDENTIFY',
+                      line: "We spot who's ready to lead.",
                     },
                     {
                       key: 'CREATE',
-                      title: 'CREATE',
-                      text: 'We work with selected founders to turn successful projects into independent startups through equity partnerships.',
+                      word: 'CREATE',
+                      line: 'Strong projects become startups, with equity partnerships.',
                     },
-                  ].map((p) => {
+                  ].map((p, idx) => {
                     const isLit = selectedPillar === p.key;
+                    const animClass = idx === 0 ? 'animate-fade-line-1' : idx === 1 ? 'animate-fade-line-2' : 'animate-fade-line-3';
+
                     return (
                       <div
                         key={p.key}
                         onMouseEnter={() => setSelectedPillar(p.key)}
                         onClick={() => setSelectedPillar(p.key)}
-                        className={`p-5 rounded-xl border transition-all duration-300 cursor-pointer ${
+                        className={`p-5 rounded-xl border transition-all duration-300 cursor-pointer ${animClass} ${
                           isLit
-                            ? 'border-[#8FE8FF] bg-[#121215]/90 shadow-[0_0_25px_rgba(143,232,255,0.35)]'
+                            ? 'border-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_25px_rgba(143,232,255,0.35)]'
                             : 'border-white/10 bg-black/60 hover:border-white/30'
                         }`}
                       >
-                        <div className={`font-display text-sm tracking-wider font-extrabold mb-2 ${isLit ? 'text-[#8FE8FF]' : 'text-white'}`}>
-                          {p.title}
+                        <div
+                          className={`font-display text-lg sm:text-xl tracking-wider font-[700] mb-2 transition-colors ${
+                            isLit ? 'text-[#8FE8FF]' : 'text-white'
+                          }`}
+                          style={isLit ? { textShadow: '0 0 20px rgba(143,232,255,0.45)' } : {}}
+                        >
+                          {p.word}
                         </div>
                         <p className="text-xs sm:text-sm font-sans text-[#a1a1aa] leading-relaxed">
-                          {p.text}
+                          {p.line}
                         </p>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="pt-2 text-sm sm:text-base font-mono text-[#8FE8FF]">
-                  We don't just teach entrepreneurship. We build real things.
+                {/* Closing Line */}
+                <div className="pt-2 text-sm sm:text-base font-mono text-[#e8e8e6] animate-fade-line-4">
+                  We don't teach entrepreneurship.{' '}
+                  <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
+                    We build it.
+                  </span>
                 </div>
               </div>
             )}
 
             {/* FLOOR 03: PROJECT ARCHIVE */}
             {activeFloorContent === '03' && (
-              <div className="flex flex-col space-y-6 animate-fade-in">
-                <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
-                    PROJECT ARCHIVE
+              <div className="flex flex-col space-y-5 animate-fade-in max-w-2xl py-8">
+                {/* Tiny Label in Accent Colour */}
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF]">
+                  PROJECT ARCHIVE
+                </div>
+
+                {/* Headline: "PROJECT 001" (Unbounded, mixing weight 200 and 700) */}
+                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                  <span className="font-[200] text-[#bdbdb8]">PROJECT </span>
+                  <span className="font-[700] text-[#e8e8e6]">001</span>
+                </h1>
+
+                {/* Pill: STATUS: IN DEVELOPMENT */}
+                <div className="inline-flex items-center self-start px-3.5 py-1.5 rounded-full border border-[#8FE8FF]/40 bg-[#8FE8FF]/10 text-[11px] font-mono tracking-widest text-[#8FE8FF] animate-fade-line-1">
+                  STATUS: IN DEVELOPMENT
+                </div>
+
+                {/* Line */}
+                <div className="pt-1 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed animate-fade-line-2">
+                  Something is being built. You'll see it{' '}
+                  <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
+                    here first.
                   </span>
                 </div>
 
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-white">
-                  PROJECT 001
-                </h1>
-
-                {/* Pill */}
-                <div className="inline-flex items-center self-start px-3.5 py-1.5 rounded-full border border-white/20 bg-white/5 text-[11px] font-mono tracking-widest text-[#e8e8e6]">
-                  STATUS : IN DEVELOPMENT
-                </div>
-
-                <p className="font-sans text-base sm:text-lg text-[#a1a1aa] max-w-xl">
-                  Our first project is in the works. Stay tuned.
-                </p>
-
-                {/* Link: Learn More → */}
-                <div className="pt-2">
+                {/* Link: Learn More → (Opens small panel) */}
+                <div className="pt-2 animate-fade-line-3">
                   <button
                     onClick={() => setShowLearnMoreModal(true)}
                     className="inline-flex items-center space-x-2 text-sm font-mono uppercase tracking-wider text-[#8FE8FF] hover:text-white transition-colors cursor-pointer group"
@@ -1174,23 +1198,32 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
             {/* FLOOR 04: OUR VISION */}
             {activeFloorContent === '04' && (
-              <div className="flex flex-col space-y-6 animate-fade-in">
-                <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
-                    OUR VISION
+              <div className="flex flex-col space-y-5 animate-fade-in max-w-2xl py-8">
+                {/* Tiny Label in Accent Colour */}
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF]">
+                  OUR VISION
+                </div>
+
+                {/* Headline: "Students shouldn't have to wait to build." (Unbounded, mixing weight 200 and 700, max 8 words) */}
+                <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl tracking-tight leading-tight max-w-2xl">
+                  <span className="font-[200] text-[#bdbdb8]">Students shouldn't </span>
+                  <span className="font-[700] text-[#e8e8e6]">have to wait to build.</span>
+                </h1>
+
+                {/* Line */}
+                <div className="pt-1 text-sm sm:text-base lg:text-lg font-mono uppercase tracking-wider text-[#e8e8e6] leading-relaxed animate-fade-line-1">
+                  FROM STUDENTS TO{' '}
+                  <span className="text-[#8FE8FF] font-bold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
+                    BUILDERS.
+                  </span>{' '}
+                  FROM BUILDERS TO{' '}
+                  <span className="text-[#8FE8FF] font-bold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
+                    FOUNDERS.
                   </span>
                 </div>
 
-                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-tight text-white leading-tight max-w-2xl">
-                  FROM STUDENTS TO BUILDERS. FROM BUILDERS TO FOUNDERS.
-                </h1>
-
-                <p className="font-sans text-sm sm:text-base text-[#a1a1aa] max-w-xl leading-relaxed">
-                  We want to create an ecosystem where students don't have to wait for opportunities to build something meaningful.
-                </p>
-
-                <div className="pt-3">
+                {/* Button: Join The Movement → + Scroll to Story Hint */}
+                <div className="pt-3 animate-fade-line-2 flex flex-wrap items-center gap-4">
                   <a
                     href={config.socials.linkedin}
                     target="_blank"
@@ -1200,11 +1233,119 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     <span>Join The Movement</span>
                     <span>→</span>
                   </a>
+
+                  {/* Scroll to Story indicator */}
+                  <a
+                    href="#story-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('story-1')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center space-x-1.5 text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white transition-colors cursor-pointer"
+                  >
+                    <span>Read The Story</span>
+                    <span>↓</span>
+                  </a>
                 </div>
               </div>
             )}
 
           </div>
+
+          {/* ==============================================================
+              THE STORY SECTION & FINAL SCREEN (Scrollable from Floor 04)
+              Four full-height screens for the story + one full-height final screen
+          ============================================================== */}
+          {activeFloorContent === '04' && (
+            <div className="relative z-20 w-full flex flex-col pt-16">
+              
+              {/* STORY SCREEN 1 */}
+              <div
+                id="story-1"
+                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+              >
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
+                  THE STORY · PART I
+                </div>
+                <h2 className="font-display text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-tight max-w-4xl">
+                  <span className="font-[200] text-[#bdbdb8]">We started </span>
+                  <span className="font-[700] text-[#e8e8e6]">small.</span>
+                </h2>
+              </div>
+
+              {/* STORY SCREEN 2 */}
+              <div
+                id="story-2"
+                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+              >
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
+                  THE STORY · PART II
+                </div>
+                <h2 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl">
+                  <span className="font-[200] text-[#bdbdb8]">A few minds. One rule: </span>
+                  <span className="font-[700] text-[#8FE8FF]" style={{ textShadow: '0 0 25px rgba(143,232,255,0.45)' }}>
+                    build, don't just talk.
+                  </span>
+                </h2>
+              </div>
+
+              {/* STORY SCREEN 3 */}
+              <div
+                id="story-3"
+                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+              >
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
+                  THE STORY · PART III
+                </div>
+                <h2 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl">
+                  <span className="font-[200] text-[#bdbdb8]">When a project shows promise, </span>
+                  <span className="font-[700] text-[#8FE8FF]" style={{ textShadow: '0 0 25px rgba(143,232,255,0.45)' }}>
+                    we back the people behind it.
+                  </span>
+                </h2>
+              </div>
+
+              {/* STORY SCREEN 4 */}
+              <div
+                id="story-4"
+                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+              >
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
+                  THE STORY · PART IV
+                </div>
+                <h2 className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight leading-tight max-w-4xl">
+                  <span className="font-[200] text-[#bdbdb8]">We're not an investment fund or a VC firm. </span>
+                  <span className="font-[700] text-[#8FE8FF]" style={{ textShadow: '0 0 25px rgba(143,232,255,0.45)' }}>
+                    We're builders.
+                  </span>
+                </h2>
+              </div>
+
+              {/* FINAL SCREEN */}
+              <div
+                id="final-screen"
+                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/10"
+              >
+                <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-8">
+                  THE GOTHAM MOTTO
+                </div>
+                <h2 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl mb-10">
+                  <span className="font-[200] text-[#bdbdb8]">THE FUTURE IS BUILT, </span>
+                  <span className="font-[700] text-[#e8e8e6]">NOT WAITED FOR.</span>
+                </h2>
+                <a
+                  href={config.socials.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-3 px-8 py-4 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(143,232,255,0.45)] cursor-pointer active:scale-95"
+                >
+                  <span>Join The Movement</span>
+                  <span>→</span>
+                </a>
+              </div>
+
+            </div>
+          )}
 
           {/* Bottom Return Hint (Shown for first 4 seconds only) */}
           <div className="relative z-20 pb-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono uppercase tracking-widest">

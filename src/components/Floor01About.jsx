@@ -104,62 +104,36 @@ export default function Floor01About() {
       {/* 2. Main Content Area */}
       <div className="relative z-10 max-w-2xl lg:max-w-3xl flex flex-col space-y-6 sm:space-y-8 animate-fade-in">
         
-        {/* Eyebrow Label */}
+        {/* Tiny Label in Accent Colour */}
         <div className="inline-flex items-center space-x-3">
           <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
-            ABOUT GOTHAM
+          <span className="font-sans font-medium text-[11px] sm:text-[12px] uppercase tracking-[0.35em] text-[#8FE8FF]">
+            WHO WE ARE
           </span>
           <span className="text-[10px] font-mono uppercase tracking-widest text-[#8a8a88] border-l border-white/20 pl-3">
             LEVEL 01
           </span>
         </div>
 
-        {/* Logo and Headline Lockup */}
-        <div className="flex items-center space-x-5 sm:space-x-7">
-          {/* Glowing Seal Logo */}
-          <div className="relative flex-shrink-0 group">
-            {/* Slow Pulse Glow Behind the Logo */}
-            <div
-              className="absolute -inset-3 sm:-inset-4 rounded-full blur-xl opacity-60 animate-pulse"
-              style={{
-                background: `radial-gradient(circle, ${config.colors.glow} 0%, rgba(143,232,255,0.1) 70%, transparent 100%)`,
-                animationDuration: '3.5s',
-              }}
-            />
-
-            {/* Logo Badge */}
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-black/80 border border-white/20 p-2.5 sm:p-3 flex items-center justify-center shadow-2xl backdrop-blur-md">
-              <img
-                src="/images/gc-logo.png"
-                alt="Gotham Collage Emblem"
-                className="w-full h-full object-contain filter drop-shadow-[0_2px_14px_rgba(143,232,255,0.6)]"
-              />
-            </div>
-          </div>
-
-          {/* Heading */}
-          <div>
-            <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-white leading-none">
-              GOTHAM COLLAGE
-            </h1>
-            <p className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-[#a1a1aa] mt-2">
-              STUDENT-LED VENTURE STUDIO
-            </p>
-          </div>
+        {/* Headline: "We're people who build." (Unbounded, mixing weight 200 and 700, max 8 words) */}
+        <div>
+          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+            <span className="font-[200] text-[#bdbdb8]">We're people </span>
+            <span className="font-[700] text-[#e8e8e6]">who build.</span>
+          </h1>
         </div>
 
-        {/* Slow Typing Body Text from SPEC.md */}
-        <div className="relative p-5 sm:p-7 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md shadow-2xl min-h-[140px] sm:min-h-[160px] flex items-center">
-          <p className="font-sans text-sm sm:text-base lg:text-lg text-[#e8e8e6] leading-relaxed font-normal">
-            {displayedText}
-            {/* Blinking Cursor */}
-            <span
-              className={`inline-block w-2 sm:w-2.5 h-4 sm:h-5 ml-1 bg-[#8FE8FF] align-middle transition-opacity duration-100 ${
-                isTypingDone ? 'animate-pulse' : 'opacity-100'
-              }`}
-            />
-          </p>
+        {/* Short Lines (one at a time, 0.5s fade-in, upward move, 0.25s stagger) */}
+        <div className="space-y-3 pt-2 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed">
+          <div className="animate-fade-line-1 text-[#bdbdb8]">
+            Investors kept asking: "Where's your team?"
+          </div>
+          <div className="animate-fade-line-2 text-white">
+            So we became <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>one.</span>
+          </div>
+          <div className="animate-fade-line-3 text-[#a1a1aa] text-sm sm:text-base">
+            Gotham Collage is a student-led venture studio.
+          </div>
         </div>
 
         {/* Bottom Metadata Hint */}

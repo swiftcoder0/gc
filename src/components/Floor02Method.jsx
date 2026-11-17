@@ -30,19 +30,19 @@ export default function Floor02Method() {
       id: 'BUILD',
       num: '01',
       label: 'BUILD',
-      line: 'we collaborate as students and build projects from scratch',
+      line: 'Real projects, made together.',
     },
     {
       id: 'IDENTIFY',
       num: '02',
       label: 'IDENTIFY',
-      line: 'after launching and validating projects, we identify people with the potential to become founders',
+      line: "We spot who's ready to lead.",
     },
     {
       id: 'CREATE',
       num: '03',
       label: 'CREATE',
-      line: 'we work with selected founders to turn successful projects into independent startups through equity partnerships',
+      line: 'Strong projects become startups, with equity partnerships.',
     },
   ];
 
@@ -103,10 +103,10 @@ export default function Floor02Method() {
       {/* 2. Main Content Area */}
       <div className="relative z-10 max-w-4xl flex flex-col space-y-6 sm:space-y-8 animate-fade-in">
         
-        {/* Eyebrow Label & Level Tag */}
+        {/* Tiny Label in Accent Colour */}
         <div className="inline-flex items-center space-x-3">
           <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
+          <span className="font-sans font-medium text-[11px] sm:text-[12px] uppercase tracking-[0.35em] text-[#8FE8FF]">
             THE METHOD
           </span>
           <span className="text-[10px] font-mono uppercase tracking-widest text-[#8a8a88] border-l border-white/20 pl-3">
@@ -222,7 +222,7 @@ export default function Floor02Method() {
           <div className="p-4 sm:p-5 rounded-xl border border-white/10 bg-black/60 backdrop-blur-md flex items-center space-x-3.5 shadow-xl max-w-2xl">
             <span className="w-1.5 h-1.5 rounded-full bg-[#8FE8FF] shadow-[0_0_6px_#8FE8FF]" />
             <p className="font-mono text-xs sm:text-sm uppercase tracking-wider text-[#e8e8e6] font-semibold">
-              We don't just teach entrepreneurship. We build real things.
+              We don't teach entrepreneurship. <span className="text-[#8FE8FF]" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>We build it.</span>
             </p>
           </div>
         </div>

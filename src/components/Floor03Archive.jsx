@@ -38,10 +38,10 @@ export default function Floor03Archive() {
       {/* 2. Left Main Content Area */}
       <div className="relative z-10 max-w-xl lg:max-w-2xl flex flex-col space-y-6 sm:space-y-7 animate-fade-in text-left">
         
-        {/* Eyebrow Label & Level Tag */}
+        {/* Tiny Label in Accent Colour */}
         <div className="inline-flex items-center space-x-3">
           <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
+          <span className="font-sans font-medium text-[11px] sm:text-[12px] uppercase tracking-[0.35em] text-[#8FE8FF]">
             PROJECT ARCHIVE
           </span>
           <span className="text-[10px] font-mono uppercase tracking-widest text-[#8a8a88] border-l border-white/20 pl-3">
@@ -49,24 +49,25 @@ export default function Floor03Archive() {
           </span>
         </div>
 
-        {/* Title: PROJECT 001 */}
+        {/* Title: PROJECT 001 (Unbounded mixing weight 200 and 700) */}
         <div className="space-y-3">
-          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight text-white leading-none">
-            PROJECT 001
+          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-none">
+            <span className="font-[200] text-[#bdbdb8]">PROJECT </span>
+            <span className="font-[700] text-[#e8e8e6]">001</span>
           </h1>
 
-          {/* Pill: STATUS : IN DEVELOPMENT */}
+          {/* Pill: STATUS: IN DEVELOPMENT */}
           <div className="pt-1">
             <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full border border-[#8FE8FF]/50 bg-[#8FE8FF]/10 text-[#8FE8FF] text-xs font-mono tracking-widest uppercase font-semibold shadow-[0_0_15px_rgba(143,232,255,0.25)]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#8FE8FF] animate-ping" />
-              <span>STATUS : IN DEVELOPMENT</span>
+              <span>STATUS: IN DEVELOPMENT</span>
             </span>
           </div>
         </div>
 
-        {/* Text from SPEC.md */}
+        {/* Line from SPEC.md */}
         <p className="font-sans text-sm sm:text-base lg:text-lg text-[#e8e8e6] leading-relaxed max-w-lg font-normal">
-          Our first project is in the works. Stay tuned.
+          Something is being built. You'll see it <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>here first.</span>
         </p>
 
         {/* Link: Learn More → (in ice cyan) */}
