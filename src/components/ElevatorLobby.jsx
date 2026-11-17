@@ -215,14 +215,15 @@ export default function ElevatorLobby({ onBackToPortal }) {
     lastSingleTap: 0,
   });
 
-  // Lift floor buttons with labels: 04 Vision, 03 Project 001, 02 Method, 01 Who we are
+  // Lift floor buttons with labels: 04 Vision, 03 Project 001, 02 Method, 01 Who we are, 0 Portal
   const floorConfig = [
     { id: '04', label: 'Vision' },
     { id: '03', label: 'Project 001' },
     { id: '02', label: 'Method' },
     { id: '01', label: 'Who we are' },
+    { id: '0', label: 'Portal' },
   ];
-  const floorButtons = ['04', '03', '02', '01'];
+  const floorButtons = ['04', '03', '02', '01', '0'];
 
   // ==============================================================
   // 1. CANVAS STARFIELD ENGINE (Lightweight, rAF, 3 depth layers)
@@ -372,6 +373,21 @@ export default function ElevatorLobby({ onBackToPortal }) {
   // ==============================================================
   const launchFloorTransition = (destFloor) => {
     if (isBusy) return;
+
+    // Button 0 (Portal): return back to the portal scene
+    if (destFloor === '0' || destFloor === '00') {
+      setIsBusy(true);
+      setTargetFloor('0');
+      setHighlightedFloor('0');
+      if (onBackToPortal) {
+        onBackToPortal();
+      }
+      setTimeout(() => {
+        setIsBusy(false);
+      }, 600);
+      return;
+    }
+
     if (destFloor === currentFloor && stateName === 'CONTENT') return;
 
     setIsBusy(true);
@@ -712,6 +728,9 @@ export default function ElevatorLobby({ onBackToPortal }) {
         if (highlightedFloor) {
           launchFloorTransition(highlightedFloor);
         }
+      } else if (e.key === '0') {
+        e.preventDefault();
+        launchFloorTransition('0');
       }
     };
 

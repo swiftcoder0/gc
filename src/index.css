@@ -314,15 +314,15 @@ body {
   .mobile-lift-panel-grid {
     flex-direction: row !important;
     justify-content: space-between !important;
-    gap: 6px !important;
+    gap: 4px !important;
     width: 100% !important;
   }
 
   .mobile-lift-floor-btn {
-    min-width: 48px !important;
+    min-width: 44px !important;
     min-height: 48px !important;
     flex: 1 !important;
-    padding: 6px 3px !important;
+    padding: 6px 2px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;

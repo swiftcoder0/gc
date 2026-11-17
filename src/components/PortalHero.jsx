@@ -18,22 +18,15 @@ import ElevatorLobby from './ElevatorLobby';
 export default function PortalHero() {
   const { openMemberLogin, openAdminLogin } = useAuth();
 
-  // Support direct hash linking (e.g. #lobby, #floor-03, #floor-04)
-  const [currentView, setCurrentView] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash.toLowerCase();
-      if (
-        hash.includes('lobby') ||
-        hash.includes('floor') ||
-        hash.includes('elevator') ||
-        hash.includes('project') ||
-        hash.includes('about')
-      ) {
-        return 'lobby';
-      }
+  // Always start on portal; refresh always loads portal
+  const [currentView, setCurrentView] = useState('portal');
+
+  // Clear lingering hash on initial mount so browser refresh always stays at portal
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
     }
-    return 'portal';
-  });
+  }, []);
 
   const [isHoveringPortalButton, setIsHoveringPortalButton] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -233,9 +226,6 @@ export default function PortalHero() {
       onComplete: () => {
         setCurrentView('lobby');
         setIsTransitioning(false);
-        if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', '#lobby');
-        }
       },
     });
 
