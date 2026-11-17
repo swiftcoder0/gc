@@ -37,6 +37,17 @@ export default function PortalHero() {
 
   const [isHoveringPortalButton, setIsHoveringPortalButton] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false));
+
+  // Listen for small screen changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobileScreen(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // DOM Refs
   const containerRef = useRef(null);
@@ -479,20 +490,20 @@ export default function PortalHero() {
           }}
         >
           <img
-            src="/images/portal-hall.jpg"
+            src={isMobileScreen ? '/images/mobile/portal-hall-mobile.jpg' : '/images/portal-hall.jpg'}
             alt="Gotham Collage Portal Hall"
             className="w-full h-full object-cover object-center pointer-events-none"
           />
 
-          {/* Concentric Portal Light Rings (Centered at 69.2% X, 45.2% Y) */}
+          {/* Concentric Portal Light Rings (Centered at 69.2% X, 45.2% Y on desktop, centered at 50% X, 32% Y on mobile top 60%) */}
           <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
-            style={{ left: '69.2%', top: '45.2%' }}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 mobile-portal-rings"
+            style={{ left: isMobileScreen ? '50%' : '69.2%', top: isMobileScreen ? '32%' : '45.2%' }}
           >
             {/* Outer Ring */}
             <div
               ref={outerRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] rounded-full border border-white/40 shadow-[0_0_35px_rgba(255,255,255,0.4),inset_0_0_30px_rgba(255,255,255,0.25)] transition-opacity duration-500 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] rounded-full border border-white/40 shadow-[0_0_35px_rgba(255,255,255,0.4),inset_0_0_30px_rgba(255,255,255,0.25)] transition-opacity duration-500 mobile-portal-outer-ring ${
                 isHoveringPortalButton ? 'opacity-40' : 'opacity-15'
               }`}
             />
@@ -500,7 +511,7 @@ export default function PortalHero() {
             {/* Middle Ring (Ice Cyan) */}
             <div
               ref={midRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-[#8FE8FF]/50 shadow-[0_0_40px_rgba(143,232,255,0.5),inset_0_0_30px_rgba(143,232,255,0.3)] transition-opacity duration-500 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-[#8FE8FF]/50 shadow-[0_0_40px_rgba(143,232,255,0.5),inset_0_0_30px_rgba(143,232,255,0.3)] transition-opacity duration-500 mobile-portal-mid-ring ${
                 isHoveringPortalButton ? 'opacity-60' : 'opacity-20'
               }`}
             />
@@ -508,7 +519,7 @@ export default function PortalHero() {
             {/* Inner Core Ring */}
             <div
               ref={innerRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-2 border-white shadow-[0_0_50px_rgba(255,255,255,0.9),inset_0_0_25px_rgba(255,255,255,0.7)] transition-opacity duration-500 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-2 border-white shadow-[0_0_50px_rgba(255,255,255,0.9),inset_0_0_25px_rgba(255,255,255,0.7)] transition-opacity duration-500 mobile-portal-inner-ring ${
                 isHoveringPortalButton ? 'opacity-85' : 'opacity-35'
               }`}
             />
@@ -516,7 +527,7 @@ export default function PortalHero() {
             {/* Core Center Glow Bloom */}
             <div
               ref={centerGlowRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-36 sm:h-36 rounded-full blur-2xl transition-all duration-700 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-36 sm:h-36 rounded-full blur-2xl transition-all duration-700 mobile-portal-center-glow ${
                 isHoveringPortalButton ? 'opacity-90 scale-130' : 'opacity-25 scale-100'
               }`}
               style={{
@@ -588,8 +599,8 @@ export default function PortalHero() {
             ))}
           </nav>
 
-          {/* Right: Sign In (Member & Admin) + Ice Cyan-outlined "Enter Portal" button (Rule 3: 1px border, text, 10% tint, soft glow) */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          {/* Desktop Right: Sign In (Member & Admin) + Ice Cyan-outlined "Enter Portal" button (Rule 3: 1px border, text, 10% tint, soft glow) */}
+          <div className="hidden md:flex items-center space-x-3 sm:space-x-4">
             {/* Sign In Dropdown */}
             <div className="relative group">
               <button
@@ -624,12 +635,115 @@ export default function PortalHero() {
               Enter Portal
             </button>
           </div>
+
+          {/* Mobile Right: Menu Button (Strictly for mobile <= 767px via md:hidden) */}
+          <div className="flex md:hidden items-center space-x-2">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open Navigation Menu"
+              className="min-w-[44px] min-h-[44px] px-3.5 py-2 rounded-full border border-white/20 bg-black/60 text-[#e8e8e6] text-xs font-mono uppercase tracking-wider flex items-center space-x-1.5 active:scale-95 cursor-pointer shadow-lg touch-manipulation"
+            >
+              <span>Menu</span>
+              <span className="text-sm">☰</span>
+            </button>
+          </div>
         </header>
+
+        {/* Full-screen Mobile Overlay Menu (Strictly md:hidden) */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 bg-[#0b0b0b]/98 backdrop-blur-xl flex flex-col justify-between p-6 animate-fade-in md:hidden select-none">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/60 border border-white/20 p-0.5 flex items-center justify-center">
+                  <img
+                    src="/images/mobile/gc-logo-transparent-mobile.png"
+                    alt="GC"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="font-display text-sm font-extrabold uppercase tracking-[0.22em] text-[#e8e8e6]">
+                  GOTHAM COLLAGE
+                </span>
+              </div>
+
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close Navigation Menu"
+                className="min-w-[44px] min-h-[44px] rounded-full border border-white/20 bg-white/5 text-[#e8e8e6] text-lg flex items-center justify-center active:scale-95 cursor-pointer touch-manipulation"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Menu Links */}
+            <div className="flex flex-col space-y-6 my-auto text-center py-6">
+              {config.nav.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={(e) => {
+                    setMobileMenuOpen(false);
+                    if (item.label === 'The Elevator') {
+                      e.preventDefault();
+                      triggerFlyThrough();
+                    }
+                  }}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
+                  className="font-display text-2xl uppercase tracking-widest text-[#e8e8e6] hover:text-[#8FE8FF] transition-colors py-2 active:scale-95"
+                >
+                  {item.label}
+                </a>
+              ))}
+
+              {/* Enter Portal Main Action */}
+              <div className="pt-4">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    triggerFlyThrough();
+                  }}
+                  className="w-full max-w-xs mx-auto min-h-[48px] py-3.5 px-6 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 text-xs font-mono uppercase tracking-widest shadow-[0_0_20px_rgba(143,232,255,0.4)] active:scale-95 cursor-pointer touch-manipulation"
+                >
+                  Enter Portal →
+                </button>
+              </div>
+            </div>
+
+            {/* Footer Login Options */}
+            <div className="border-t border-white/10 pt-4 flex flex-col space-y-3 text-center">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-zinc-500">
+                Authentication
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openMemberLogin();
+                  }}
+                  className="min-h-[48px] py-3 px-4 rounded-xl border border-white/20 bg-[#161619] text-xs font-mono uppercase tracking-wider text-[#e8e8e6] active:scale-95 cursor-pointer touch-manipulation"
+                >
+                  Member Login
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAdminLogin();
+                  }}
+                  className="min-h-[48px] py-3 px-4 rounded-xl border border-white/20 bg-[#161619] text-xs font-mono uppercase tracking-wider text-zinc-400 active:scale-95 cursor-pointer touch-manipulation"
+                >
+                  Admin Console
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hero Content: Centred horizontally in the lower-centre of the screen over the walkway path */}
         <div
           ref={contentRef}
-          className="absolute bottom-8 sm:bottom-12 md:bottom-14 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-20 flex flex-col items-center text-center will-change-transform pointer-events-auto"
+          className="absolute bottom-8 sm:bottom-12 md:bottom-14 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-20 flex flex-col items-center text-center will-change-transform pointer-events-auto mobile-hero-content"
         >
           <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
             
@@ -638,7 +752,7 @@ export default function PortalHero() {
               {/* Line 1: Don't wait. */}
               <span
                 ref={line1Ref}
-                className="font-display font-[200] text-[#bdbdb8] text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.04em] block"
+                className="font-display font-[200] text-[#bdbdb8] text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.04em] block mobile-hero-line-1"
               >
                 Don't wait.
               </span>
@@ -646,7 +760,7 @@ export default function PortalHero() {
               {/* Line 2: BUILD. */}
               <span
                 ref={line2Ref}
-                className="font-display font-[700] text-[#e8e8e6] text-4xl sm:text-6xl md:text-7xl lg:text-8xl mt-1 sm:mt-2 block"
+                className="font-display font-[700] text-[#e8e8e6] text-4xl sm:text-6xl md:text-7xl lg:text-8xl mt-1 sm:mt-2 block mobile-hero-line-2"
                 style={{
                   textShadow: '0 0 25px rgba(245,184,0,0.45)',
                 }}
@@ -658,7 +772,7 @@ export default function PortalHero() {
             {/* Tiny Label: Inter 500, uppercase, 11-12px, letter spacing 0.35em, grey, below headline */}
             <div
               ref={labelRef}
-              className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8a8a88] pt-1"
+              className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8a8a88] pt-1 mobile-hero-label"
             >
               GOTHAM COLLAGE · STUDENT-LED VENTURE STUDIO
             </div>
@@ -669,7 +783,7 @@ export default function PortalHero() {
                 onClick={triggerFlyThrough}
                 onMouseEnter={() => setIsHoveringPortalButton(true)}
                 onMouseLeave={() => setIsHoveringPortalButton(false)}
-                className="group inline-flex items-center space-x-2 px-5 py-2 rounded-full border border-[#F5B800] bg-[#F5B800]/10 text-[#F5B800] font-mono text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(245,184,0,0.4)] hover:shadow-[0_0_25px_rgba(245,184,0,0.7)] hover:bg-[#F5B800]/20 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
+                className="group inline-flex items-center space-x-2 px-5 py-2 rounded-full border border-[#F5B800] bg-[#F5B800]/10 text-[#F5B800] font-mono text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(245,184,0,0.4)] hover:shadow-[0_0_25px_rgba(245,184,0,0.7)] hover:bg-[#F5B800]/20 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer mobile-hero-enter-btn"
               >
                 <span className="font-semibold">Enter</span>
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>

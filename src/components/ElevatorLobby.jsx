@@ -131,13 +131,23 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
   // prefers-reduced-motion
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false));
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
       setReducedMotion(mq.matches);
       const h = (e) => setReducedMotion(e.matches);
       mq.addEventListener('change', h);
-      return () => mq.removeEventListener('change', h);
+
+      const mobileMq = window.matchMedia('(max-width: 767px)');
+      const mh = (e) => setIsMobileScreen(e.matches);
+      mobileMq.addEventListener('change', mh);
+
+      return () => {
+        mq.removeEventListener('change', h);
+        mobileMq.removeEventListener('change', mh);
+      };
     }
   }, []);
 
@@ -233,8 +243,9 @@ export default function ElevatorLobby({ onBackToPortal }) {
     resize();
     window.addEventListener('resize', resize);
 
-    // Star counts: ~140 on desktop, 70 on mobile
-    const targetCount = width >= 768 ? 140 : 70;
+    // Star counts: 140 on desktop, 60 on mobile phones (Requirement 3: ~60 stars and lighter effects)
+    const isMobile = width <= 767;
+    const targetCount = isMobile ? 60 : 140;
     const stars = [];
 
     // 3 depth layers: 0 = Far, 1 = Mid, 2 = Near
@@ -815,10 +826,10 @@ export default function ElevatorLobby({ onBackToPortal }) {
       ============================================================== */}
       <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
         
-        {/* Car Outer Centered Fixture (24-28% width, 78% height) */}
+        {/* Car Outer Centered Fixture (24-28% width, 78% height on desktop; 80% width, 58% height on mobile) */}
         <div
           ref={carWrapperRef}
-          className="relative w-[320px] sm:w-[380px] md:w-[420px] lg:w-[26vw] xl:w-[26vw] min-w-[340px] max-w-[460px] h-[78vh] min-h-[520px] max-h-[760px] flex items-center justify-center will-change-transform transition-[opacity,filter] duration-700 pointer-events-auto"
+          className="relative w-[320px] sm:w-[380px] md:w-[420px] lg:w-[26vw] xl:w-[26vw] min-w-[340px] max-w-[460px] h-[78vh] min-h-[520px] max-h-[760px] flex items-center justify-center will-change-transform transition-[opacity,filter] duration-700 pointer-events-auto mobile-lift-fixture"
         >
           {/* Thick Dark Metal Frame */}
           <div className="relative w-full h-full rounded-xl border-[16px] sm:border-[20px] border-[#151518] bg-[#0a0a0c] shadow-[0_30px_90px_rgba(0,0,0,0.98),inset_0_4px_16px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col">
@@ -883,7 +894,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 style={{ transform: 'translateX(0%)' }}
               >
                 <img
-                  src="/images/door-chrome.jpg"
+                  src={isMobileScreen ? '/images/mobile/door-chrome-mobile.jpg' : '/images/door-chrome.jpg'}
                   alt="Elevator Door Left"
                   className="w-full h-full object-cover object-left filter brightness-95 contrast-125 pointer-events-none"
                 />
@@ -892,7 +903,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 {/* Real Logo Left Half (transparent PNG / mix-blend-mode: screen, NO black box) */}
                 <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 pointer-events-none z-20 flex items-center justify-center">
                   <img
-                    src="/images/gc-logo-transparent.png"
+                    src={isMobileScreen ? '/images/mobile/gc-logo-transparent-mobile.png' : '/images/gc-logo-transparent.png'}
                     alt="GC Logo Left"
                     className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(143,232,255,0.65)]"
                     style={{ mixBlendMode: 'screen' }}
@@ -907,7 +918,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 style={{ transform: 'translateX(0%)' }}
               >
                 <img
-                  src="/images/door-chrome.jpg"
+                  src={isMobileScreen ? '/images/mobile/door-chrome-mobile.jpg' : '/images/door-chrome.jpg'}
                   alt="Elevator Door Right"
                   className="w-full h-full object-cover object-right filter brightness-95 contrast-125 pointer-events-none"
                 />
@@ -916,7 +927,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 {/* Real Logo Right Half (transparent PNG / mix-blend-mode: screen, NO black box) */}
                 <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 pointer-events-none z-20 flex items-center justify-center">
                   <img
-                    src="/images/gc-logo-transparent.png"
+                    src={isMobileScreen ? '/images/mobile/gc-logo-transparent-mobile.png' : '/images/gc-logo-transparent.png'}
                     alt="GC Logo Right"
                     className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(143,232,255,0.65)]"
                     style={{ mixBlendMode: 'screen' }}
@@ -931,17 +942,16 @@ export default function ElevatorLobby({ onBackToPortal }) {
           </div>
 
           {/* ==========================================================
-              LAYER 4: BUTTON PANEL (built into right of car frame)
-              Four buttons with floor labels:
-              04 Vision, 03 Project 001, 02 Method, 01 Who we are
+              LAYER 4: BUTTON PANEL (built into right of car frame on desktop,
+              horizontal row below lift on mobile with >= 48x48px buttons)
           ========================================================== */}
-          <div className="absolute -right-32 sm:-right-40 md:-right-44 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-44 py-4 px-2 rounded-r-xl border-y border-r border-white/10 bg-[#111114]/95 backdrop-blur-md shadow-2xl flex flex-col items-center space-y-3 z-35">
-            <div className="text-[7px] font-mono uppercase tracking-widest text-[#71717a]">
+          <div className="absolute -right-32 sm:-right-40 md:-right-44 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-44 py-4 px-2 rounded-r-xl border-y border-r border-white/10 bg-[#111114]/95 backdrop-blur-md shadow-2xl flex flex-col items-center space-y-3 z-35 mobile-lift-panel">
+            <div className="text-[7px] font-mono uppercase tracking-widest text-[#71717a] mobile-lift-panel-label">
               PANEL
             </div>
 
             {/* Buttons 04, 03, 02, 01 with labels */}
-            <div className="flex flex-col space-y-2.5 w-full">
+            <div className="flex flex-col space-y-2.5 w-full mobile-lift-panel-grid">
               {floorConfig.map((item) => {
                 const isSelected = targetFloor === item.id;
                 const isKeyFocused = highlightedFloor === item.id;
@@ -952,7 +962,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     onClick={() => launchFloorTransition(item.id)}
                     disabled={isBusy}
                     title={`Floor ${item.id} - ${item.label}`}
-                    className={`w-full py-2 px-2.5 rounded-md font-mono transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                    className={`w-full py-2 px-2.5 rounded-md font-mono transition-all duration-200 flex items-center justify-between cursor-pointer mobile-lift-floor-btn ${
                       isSelected
                         ? 'border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_15px_rgba(143,232,255,0.45)] scale-105'
                         : isKeyFocused
@@ -960,8 +970,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
                         : 'border border-white/10 bg-[#161619] text-[#e8e8e6] hover:border-[#8FE8FF] hover:text-[#8FE8FF] hover:bg-[#8FE8FF]/10 hover:shadow-[0_0_12px_rgba(143,232,255,0.4)]'
                     }`}
                   >
-                    <span className="font-bold text-xs">{item.id}</span>
-                    <span className={`text-[8px] sm:text-[9px] uppercase tracking-wider pl-1.5 truncate ${isSelected ? 'text-[#8FE8FF] font-semibold' : 'text-zinc-400'}`}>
+                    <span className="font-bold text-xs mobile-lift-floor-btn-num">{item.id}</span>
+                    <span className={`text-[8px] sm:text-[9px] uppercase tracking-wider pl-1.5 truncate mobile-lift-floor-btn-label ${isSelected ? 'text-[#8FE8FF] font-semibold' : 'text-zinc-400'}`}>
                       {item.label}
                     </span>
                   </button>
@@ -970,7 +980,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             </div>
 
             {/* Keycard Sensor Bar */}
-            <div className="w-6 h-1 rounded-full bg-[#8FE8FF]/50 shadow-[0_0_6px_#8FE8FF]" />
+            <div className="w-6 h-1 rounded-full bg-[#8FE8FF]/50 shadow-[0_0_6px_#8FE8FF] mobile-lift-panel-sensor" />
           </div>
 
         </div>
@@ -999,7 +1009,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         {activeFloorContent === '04' && (
           <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
             <img
-              src="/images/floor-04-skyline.jpg"
+              src={isMobileScreen ? '/images/mobile/floor-04-skyline-mobile.jpg' : '/images/floor-04-skyline.jpg'}
               alt="Floor 04 Cube Skyline"
               className="w-full h-full object-cover object-right filter-ice-cyan"
             />
@@ -1011,7 +1021,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         {activeFloorContent === '03' && (
           <div className="absolute inset-0 z-0 pointer-events-none opacity-25">
             <img
-              src="/images/floor-03-archive.jpg"
+              src={isMobileScreen ? '/images/mobile/floor-03-archive-mobile.jpg' : '/images/floor-03-archive.jpg'}
               alt="Floor 03 Archive"
               className="w-full h-full object-cover object-center filter-ice-cyan"
             />
@@ -1019,14 +1029,14 @@ export default function ElevatorLobby({ onBackToPortal }) {
           </div>
         )}
 
-        <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-12 lg:p-20 overflow-y-auto">
+        <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-12 lg:p-20 overflow-y-auto mobile-content-container">
 
           {/* Top Bar inside Content Screen: Back to Lift Button & Floor Badge */}
           <div className="relative z-20 flex items-center justify-between w-full pt-14">
             <button
               onClick={handleReturnToLift}
               disabled={isBusy}
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/20 bg-black/80 hover:border-[#8FE8FF] hover:text-[#8FE8FF] text-xs font-mono uppercase tracking-widest text-[#e8e8e6] transition-all shadow-xl cursor-pointer active:scale-95"
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/20 bg-black/80 hover:border-[#8FE8FF] hover:text-[#8FE8FF] text-xs font-mono uppercase tracking-widest text-[#e8e8e6] transition-all shadow-xl cursor-pointer active:scale-95 mobile-back-btn"
             >
               <span>← Back to lift</span>
             </button>
@@ -1038,7 +1048,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
           </div>
 
           {/* Main Floor Copy Area (Strictly from SPEC.md) */}
-          <div className="relative z-20 my-auto max-w-4xl flex flex-col space-y-6 text-left w-full">
+          <div className="relative z-20 my-auto max-w-4xl flex flex-col space-y-6 text-left w-full mobile-content-inner">
             
             {/* FLOOR 01: WHO WE ARE */}
             {activeFloorContent === '01' && (
@@ -1049,13 +1059,13 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
 
                 {/* Headline: "We're people who build." (Unbounded, mixing weight 200 and 700, max 8 words) */}
-                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight mobile-content-headline">
                   <span className="font-[200] text-[#bdbdb8]">We're people </span>
                   <span className="font-[700] text-[#e8e8e6]">who build.</span>
                 </h1>
 
                 {/* Lines (one at a time, 0.5s fade, slight upward move, 0.25s stagger) */}
-                <div className="space-y-3 pt-2 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed">
+                <div className="space-y-3 pt-2 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed mobile-content-body">
                   <div className="animate-fade-line-1 text-[#bdbdb8]">
                     Investors kept asking: "Where's your team?"
                   </div>
@@ -1078,7 +1088,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
 
                 {/* Three large words, each with one line (BUILD, IDENTIFY, CREATE) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 mobile-method-stack">
                   {[
                     {
                       key: 'BUILD',
@@ -1104,7 +1114,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                         key={p.key}
                         onMouseEnter={() => setSelectedPillar(p.key)}
                         onClick={() => setSelectedPillar(p.key)}
-                        className={`p-5 rounded-xl border transition-all duration-300 cursor-pointer ${animClass} ${
+                        className={`p-5 rounded-xl border transition-all duration-300 cursor-pointer mobile-method-item ${animClass} ${
                           isLit
                             ? 'border-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_25px_rgba(143,232,255,0.35)]'
                             : 'border-white/10 bg-black/60 hover:border-white/30'
@@ -1118,7 +1128,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                         >
                           {p.word}
                         </div>
-                        <p className="text-xs sm:text-sm font-sans text-[#a1a1aa] leading-relaxed">
+                        <p className="text-xs sm:text-sm font-sans text-[#a1a1aa] leading-relaxed mobile-content-body">
                           {p.line}
                         </p>
                       </div>
@@ -1127,7 +1137,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
 
                 {/* Closing Line */}
-                <div className="pt-2 text-sm sm:text-base font-mono text-[#e8e8e6] animate-fade-line-4">
+                <div className="pt-2 text-sm sm:text-base font-mono text-[#e8e8e6] animate-fade-line-4 mobile-content-body">
                   We don't teach entrepreneurship.{' '}
                   <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
                     We build it.
@@ -1145,7 +1155,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
 
                 {/* Headline: "PROJECT 001" (Unbounded, mixing weight 200 and 700) */}
-                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight mobile-content-headline">
                   <span className="font-[200] text-[#bdbdb8]">PROJECT </span>
                   <span className="font-[700] text-[#e8e8e6]">001</span>
                 </h1>
@@ -1156,7 +1166,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
 
                 {/* Line */}
-                <div className="pt-1 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed animate-fade-line-2">
+                <div className="pt-1 text-base sm:text-lg lg:text-xl font-sans text-[#e8e8e6] leading-relaxed animate-fade-line-2 mobile-content-body">
                   Something is being built. You'll see it{' '}
                   <span className="text-[#8FE8FF] font-semibold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
                     here first.
@@ -1167,7 +1177,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 <div className="pt-2 animate-fade-line-3">
                   <button
                     onClick={() => setShowLearnMoreModal(true)}
-                    className="inline-flex items-center space-x-2 text-sm font-mono uppercase tracking-wider text-[#8FE8FF] hover:text-white transition-colors cursor-pointer group"
+                    className="inline-flex items-center space-x-2 text-sm font-mono uppercase tracking-wider text-[#8FE8FF] hover:text-white transition-colors cursor-pointer group min-h-[44px]"
                   >
                     <span>Learn More</span>
                     <span className="transition-transform group-hover:translate-x-1">→</span>
@@ -1181,12 +1191,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
                       <div className="text-xs font-mono uppercase tracking-widest text-[#8FE8FF]">
                         PROJECT ARCHIVE NOTICE
                       </div>
-                      <p className="text-sm font-sans text-[#e8e8e6] leading-relaxed">
+                      <p className="text-sm font-sans text-[#e8e8e6] leading-relaxed mobile-content-body">
                         Status: in development. Details will be shared when we launch.
                       </p>
                       <button
                         onClick={() => setShowLearnMoreModal(false)}
-                        className="self-end px-4 py-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-mono uppercase text-white transition-colors cursor-pointer"
+                        className="self-end min-h-[44px] px-5 py-2 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-mono uppercase text-white transition-colors cursor-pointer"
                       >
                         Close
                       </button>
@@ -1205,13 +1215,13 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
 
                 {/* Headline: "Students shouldn't have to wait to build." (Unbounded, mixing weight 200 and 700, max 8 words) */}
-                <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl tracking-tight leading-tight max-w-2xl">
+                <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl tracking-tight leading-tight max-w-2xl mobile-content-headline">
                   <span className="font-[200] text-[#bdbdb8]">Students shouldn't </span>
                   <span className="font-[700] text-[#e8e8e6]">have to wait to build.</span>
                 </h1>
 
                 {/* Line */}
-                <div className="pt-1 text-sm sm:text-base lg:text-lg font-mono uppercase tracking-wider text-[#e8e8e6] leading-relaxed animate-fade-line-1">
+                <div className="pt-1 text-sm sm:text-base lg:text-lg font-mono uppercase tracking-wider text-[#e8e8e6] leading-relaxed animate-fade-line-1 mobile-content-body">
                   FROM STUDENTS TO{' '}
                   <span className="text-[#8FE8FF] font-bold" style={{ textShadow: '0 0 20px rgba(143,232,255,0.45)' }}>
                     BUILDERS.
@@ -1228,7 +1238,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     href={config.socials.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-3 px-6 py-3 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_18px_rgba(143,232,255,0.35)] cursor-pointer"
+                    className="inline-flex items-center space-x-3 px-6 py-3 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_18px_rgba(143,232,255,0.35)] cursor-pointer min-h-[48px]"
                   >
                     <span>Join The Movement</span>
                     <span>→</span>
@@ -1241,7 +1251,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                       e.preventDefault();
                       document.getElementById('story-1')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center space-x-1.5 text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white transition-colors cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white transition-colors cursor-pointer min-h-[44px]"
                   >
                     <span>Read The Story</span>
                     <span>↓</span>
@@ -1262,12 +1272,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
               {/* STORY SCREEN 1 */}
               <div
                 id="story-1"
-                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+                className="min-h-screen mobile-story-section w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
               >
                 <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
                   THE STORY · PART I
                 </div>
-                <h2 className="font-display text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-tight max-w-4xl">
+                <h2 className="font-display mobile-story-title text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-tight max-w-4xl">
                   <span className="font-[200] text-[#bdbdb8]">We started </span>
                   <span className="font-[700] text-[#e8e8e6]">small.</span>
                 </h2>
@@ -1276,12 +1286,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
               {/* STORY SCREEN 2 */}
               <div
                 id="story-2"
-                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+                className="min-h-screen mobile-story-section w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
               >
                 <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
                   THE STORY · PART II
                 </div>
-                <h2 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl">
+                <h2 className="font-display mobile-story-title text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl">
                   <span className="font-[200] text-[#bdbdb8]">A few minds. One rule: </span>
                   <span className="font-[700] text-[#8FE8FF]" style={{ textShadow: '0 0 25px rgba(143,232,255,0.45)' }}>
                     build, don't just talk.
@@ -1292,12 +1302,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
               {/* STORY SCREEN 3 */}
               <div
                 id="story-3"
-                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+                className="min-h-screen mobile-story-section w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
               >
                 <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
                   THE STORY · PART III
                 </div>
-                <h2 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl">
+                <h2 className="font-display mobile-story-title text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl">
                   <span className="font-[200] text-[#bdbdb8]">When a project shows promise, </span>
                   <span className="font-[700] text-[#8FE8FF]" style={{ textShadow: '0 0 25px rgba(143,232,255,0.45)' }}>
                     we back the people behind it.
@@ -1308,12 +1318,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
               {/* STORY SCREEN 4 */}
               <div
                 id="story-4"
-                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
+                className="min-h-screen mobile-story-section w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/5"
               >
                 <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-6">
                   THE STORY · PART IV
                 </div>
-                <h2 className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight leading-tight max-w-4xl">
+                <h2 className="font-display mobile-story-title text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight leading-tight max-w-4xl">
                   <span className="font-[200] text-[#bdbdb8]">We're not an investment fund or a VC firm. </span>
                   <span className="font-[700] text-[#8FE8FF]" style={{ textShadow: '0 0 25px rgba(143,232,255,0.45)' }}>
                     We're builders.
@@ -1324,12 +1334,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
               {/* FINAL SCREEN */}
               <div
                 id="final-screen"
-                className="min-h-screen w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/10"
+                className="min-h-screen mobile-final-section w-full flex flex-col items-center justify-center text-center px-4 sm:px-8 py-20 border-t border-white/10"
               >
                 <div className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8FE8FF] mb-8">
                   THE GOTHAM MOTTO
                 </div>
-                <h2 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl mb-10">
+                <h2 className="font-display mobile-story-title text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight leading-tight max-w-4xl mb-10">
                   <span className="font-[200] text-[#bdbdb8]">THE FUTURE IS BUILT, </span>
                   <span className="font-[700] text-[#e8e8e6]">NOT WAITED FOR.</span>
                 </h2>
@@ -1337,7 +1347,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                   href={config.socials.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-3 px-8 py-4 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(143,232,255,0.45)] cursor-pointer active:scale-95"
+                  className="inline-flex items-center space-x-3 px-8 py-4 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(143,232,255,0.45)] cursor-pointer active:scale-95 min-h-[48px]"
                 >
                   <span>Join The Movement</span>
                   <span>→</span>

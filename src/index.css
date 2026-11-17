@@ -174,3 +174,221 @@ body {
   }
 }
 
+
+/* ==============================================================
+   MOBILE PHONE ENHANCEMENTS (Strictly max-width: 767px)
+   Zero effect on desktop (widths >= 768px stay 100% untouched)
+   ============================================================== */
+@media (max-width: 767px) {
+  /* 1. Viewport & Safe-area Insets */
+  html, body {
+    width: 100% !important;
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* 2. Portal Hero on Mobile (top ~60% portal, lower ~40% centered copy) */
+  .mobile-portal-rings {
+    left: 50% !important;
+    top: 32% !important;
+  }
+
+  .mobile-portal-outer-ring {
+    width: 250px !important;
+    height: 250px !important;
+  }
+
+  .mobile-portal-mid-ring {
+    width: 175px !important;
+    height: 175px !important;
+  }
+
+  .mobile-portal-inner-ring {
+    width: 110px !important;
+    height: 110px !important;
+  }
+
+  .mobile-portal-center-glow {
+    width: 90px !important;
+    height: 90px !important;
+  }
+
+  .mobile-hero-content {
+    bottom: clamp(1rem, 4vh, 2rem) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 92% !important;
+    max-width: 400px !important;
+    padding: 0 !important;
+  }
+
+  .mobile-hero-line-1 {
+    font-size: clamp(1.75rem, 8vw, 2.4rem) !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .mobile-hero-line-2 {
+    font-size: clamp(2.5rem, 12vw, 3.5rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .mobile-hero-label {
+    font-size: clamp(9px, 2.7vw, 11px) !important;
+    letter-spacing: 0.28em !important;
+    padding-top: 2px !important;
+  }
+
+  .mobile-hero-enter-btn {
+    min-width: 140px !important;
+    min-height: 48px !important;
+    font-size: 13px !important;
+    padding: 12px 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    touch-action: manipulation !important;
+  }
+
+  /* 3. Lift Car on Mobile (~80% width, ~58% height, centered) */
+  .mobile-lift-fixture {
+    width: 80vw !important;
+    max-width: 340px !important;
+    height: 58dvh !important;
+    min-height: 350px !important;
+    max-height: 480px !important;
+    min-width: unset !important;
+    margin: 0 auto !important;
+    margin-top: -32px !important;
+  }
+
+  /* Floor buttons sit in a horizontal row below the lift (>= 48x48px each) */
+  .mobile-lift-panel {
+    position: absolute !important;
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: -66px !important;
+    top: auto !important;
+    width: 88vw !important;
+    max-width: 340px !important;
+    height: auto !important;
+    padding: 6px 8px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(17, 17, 20, 0.95) !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.85) !important;
+  }
+
+  .mobile-lift-panel-label,
+  .mobile-lift-panel-sensor {
+    display: none !important;
+  }
+
+  .mobile-lift-panel-grid {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .mobile-lift-floor-btn {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    flex: 1 !important;
+    padding: 6px 3px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    touch-action: manipulation !important;
+  }
+
+  .mobile-lift-floor-btn-num {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+  }
+
+  .mobile-lift-floor-btn-label {
+    font-size: 8px !important;
+    letter-spacing: 0.04em !important;
+    padding-left: 0 !important;
+    line-height: 1.1 !important;
+    margin-top: 2px !important;
+  }
+
+  /* 4. Content Floors on Mobile (Stacked, centered, text >= 16px, no overflow) */
+  .mobile-content-container {
+    padding: 16px 14px !important;
+    padding-top: max(16px, env(safe-area-inset-top, 16px)) !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .mobile-content-headline {
+    font-size: clamp(1.6rem, 7vw, 2.2rem) !important;
+    line-height: 1.18 !important;
+  }
+
+  .mobile-content-body {
+    font-size: clamp(16px, 4.3vw, 18px) !important;
+    line-height: 1.55 !important;
+  }
+
+  .mobile-method-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .mobile-method-item {
+    min-height: 52px !important;
+    padding: 14px 16px !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .mobile-back-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 10px 18px !important;
+    font-size: 13px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    touch-action: manipulation !important;
+  }
+
+  .mobile-story-section {
+    min-height: 85dvh !important;
+    padding: 36px 14px !important;
+  }
+
+  .mobile-story-title {
+    font-size: clamp(1.8rem, 8vw, 2.8rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  .mobile-final-section {
+    min-height: 85dvh !important;
+    padding: 36px 14px !important;
+  }
+
+  .mobile-touch-target {
+    min-height: 48px !important;
+    min-width: 48px !important;
+    touch-action: manipulation !important;
+  }
+}
