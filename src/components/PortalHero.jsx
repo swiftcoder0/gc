@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { useAuth } from '../context/AuthContext';
 import { config } from '../config';
+import ElevatorLobby from './ElevatorLobby';
 
 /**
  * PortalHero — Screen 1: The Portal
@@ -201,60 +202,15 @@ export default function PortalHero() {
     };
   }, [currentView, isTransitioning]);
 
-  // View: Lobby Placeholder
+  // View: The Gotham Elevator Lobby (Screen 2)
   if (currentView === 'lobby') {
     return (
-      <div className="relative w-full h-[100dvh] bg-[#0b0b0b] text-[#e8e8e6] flex flex-col items-center justify-center p-6 select-none font-sans overflow-hidden">
-        {/* Subtle Ambient Backlight */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-15"
-          style={{
-            background: `radial-gradient(circle at 50% 40%, ${config.colors.goldGlow} 0%, transparent 65%)`,
-          }}
-        />
-
-        {/* Center: Lobby Placeholder Information */}
-        <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-lg animate-fade-in">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-[#F5B800]/40 bg-[#F5B800]/10 text-[#F5B800] text-[10px] font-mono tracking-[0.25em] uppercase">
-            <span>FLOOR 00</span>
-            <span>•</span>
-            <span>THE ELEVATOR LOBBY</span>
-          </div>
-
-          <h2 className="font-display text-2xl sm:text-4xl font-extrabold uppercase tracking-tight text-white">
-            lobby
-          </h2>
-
-          <p className="text-xs sm:text-sm font-sans text-[#8a8a88] max-w-sm leading-relaxed">
-            Welcome to the threshold of Gotham Collage. Select your floor to explore the studio archives and foundry methods.
-          </p>
-
-          <div className="pt-4 flex items-center space-x-4">
-            <button
-              onClick={() => {
-                setCurrentView('portal');
-                setIsTransitioning(false);
-              }}
-              className="px-5 py-2.5 rounded-full text-xs font-mono tracking-wider uppercase border border-white/20 text-[#a1a1aa] hover:text-white hover:border-white/50 hover:bg-white/5 transition-all"
-            >
-              ← Back to Portal
-            </button>
-
-            <button
-              onClick={openMemberLogin}
-              className="px-5 py-2.5 rounded-full text-xs font-mono tracking-wider uppercase border border-[#F5B800] text-[#F5B800] bg-[#0b0b0b] hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_15px_rgba(245,184,0,0.3)] transition-all"
-            >
-              Portal Login →
-            </button>
-          </div>
-        </div>
-
-        {/* Fade overlay for clean return */}
-        <div
-          ref={blackFadeRef}
-          className="pointer-events-none fixed inset-0 z-50 bg-[#0b0b0b] opacity-0"
-        />
-      </div>
+      <ElevatorLobby
+        onBackToPortal={() => {
+          setCurrentView('portal');
+          setIsTransitioning(false);
+        }}
+      />
     );
   }
 
@@ -355,6 +311,12 @@ export default function PortalHero() {
             <a
               key={item.label}
               href={item.href}
+              onClick={(e) => {
+                if (item.label === 'The Elevator') {
+                  e.preventDefault();
+                  triggerFlyThrough();
+                }
+              }}
               target={item.external ? '_blank' : undefined}
               rel={item.external ? 'noopener noreferrer' : undefined}
               className={`transition-colors duration-200 hover:text-white ${
