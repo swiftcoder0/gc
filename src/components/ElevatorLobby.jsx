@@ -135,13 +135,27 @@ export default function ElevatorLobby({ onBackToPortal }) {
   const audio = useMemo(() => new ElevatorAudioEngine(), []);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
+  // Initial floor detection from URL hash (e.g. #floor-03, #floor-04)
+  const getInitialFloor = () => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('04') || hash.includes('vision')) return '04';
+      if (hash.includes('03') || hash.includes('project') || hash.includes('archive')) return '03';
+      if (hash.includes('02') || hash.includes('method')) return '02';
+      if (hash.includes('01') || hash.includes('about')) return '01';
+    }
+    return 'lobby';
+  };
+
+  const initialFloor = getInitialFloor();
+
   // Simple State Machine: 'lobby' | 'closing' | 'moving' | 'opening' | 'floor'
-  const [rideState, setRideState] = useState('lobby');
+  const [rideState, setRideState] = useState(() => (initialFloor === 'lobby' ? 'lobby' : 'floor'));
 
   // Floor states: 'lobby' | '01' | '02' | '03' | '04'
-  const [currentFloor, setCurrentFloor] = useState('lobby');
-  const [targetFloor, setTargetFloor] = useState('lobby');
-  const [displayFloor, setDisplayFloor] = useState('00');
+  const [currentFloor, setCurrentFloor] = useState(initialFloor);
+  const [targetFloor, setTargetFloor] = useState(initialFloor);
+  const [displayFloor, setDisplayFloor] = useState(() => (initialFloor === 'lobby' ? '00' : initialFloor));
   const [direction, setDirection] = useState(null); // 'up' | 'down' | null
   const [doorsOpen, setDoorsOpen] = useState(true); // Open initially in lobby
   const [isFlickering, setIsFlickering] = useState(false);

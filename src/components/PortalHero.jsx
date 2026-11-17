@@ -14,8 +14,16 @@ import ElevatorLobby from './ElevatorLobby';
 export default function PortalHero() {
   const { openMemberLogin } = useAuth();
 
-  // State
-  const [currentView, setCurrentView] = useState('portal'); // 'portal' | 'lobby'
+  // State: support direct hash linking (e.g. #lobby, #floor-03, #floor-04)
+  const [currentView, setCurrentView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('lobby') || hash.includes('floor') || hash.includes('elevator') || hash.includes('project') || hash.includes('about')) {
+        return 'lobby';
+      }
+    }
+    return 'portal';
+  });
   const [isHoveringPortalButton, setIsHoveringPortalButton] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
