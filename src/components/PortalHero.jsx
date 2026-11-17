@@ -84,6 +84,12 @@ export default function PortalHero() {
       const img = new Image();
       img.src = src;
     });
+
+    // Preload mobile portal image ONLY on small screens (Requirement 6)
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      const mobImg = new Image();
+      mobImg.src = '/images/mobile/portal-hall-mobile.jpg';
+    }
   }, []);
 
   // Hero Copy Entrance Animation
@@ -244,13 +250,14 @@ export default function PortalHero() {
       tl.to(headerRef.current, { opacity: 0, duration: 0.35, ease: 'power2.out' }, 0);
     }
 
-    // 0.0s - 2.2s: Camera zooms directly toward portal center (69.2% 45.2%)
+    // 0.0s - 2.2s: Camera zooms directly toward portal center (69.2% 45.2% on desktop, 50% 37.8% on mobile)
     if (bgRef.current) {
+      const zoomOrigin = isMobileScreen ? '50% 37.8%' : '69.2% 45.2%';
       tl.to(
         bgRef.current,
         {
           scale: 7.2,
-          transformOrigin: '69.2% 45.2%',
+          transformOrigin: zoomOrigin,
           duration: 2.2,
           ease: 'power2.in',
         },
@@ -479,31 +486,36 @@ export default function PortalHero() {
           pointerEvents: currentView === 'portal' && !isTransitioning ? 'auto' : 'none',
         }}
       >
-        {/* Fullscreen Background Image with Concentric Portal Rings (filtered to ice cyan) */}
+        {/* Fullscreen Background Image with Concentric Portal Rings (filtered to ice cyan on desktop only) */}
         <div
           ref={bgRef}
-          className="absolute inset-0 z-0 will-change-transform scale-[1.03] transition-[filter] duration-700 ease-out"
+          className="absolute inset-0 z-0 will-change-transform scale-[1.03] transition-[filter] duration-700 ease-out mobile-portal-bg"
           style={{
-            filter: isHoveringPortalButton
-              ? 'hue-rotate(145deg) saturate(0.85) brightness(1.25) contrast(1.1) drop-shadow(0 0 25px rgba(143,232,255,0.35))'
-              : 'hue-rotate(145deg) saturate(0.85) brightness(1.02) contrast(1.0)',
+            filter: isMobileScreen
+              ? (isHoveringPortalButton ? 'brightness(1.15)' : 'none')
+              : (isHoveringPortalButton
+                  ? 'hue-rotate(145deg) saturate(0.85) brightness(1.25) contrast(1.1) drop-shadow(0 0 25px rgba(143,232,255,0.35))'
+                  : 'hue-rotate(145deg) saturate(0.85) brightness(1.02) contrast(1.0)'),
           }}
         >
-          <img
-            src={isMobileScreen ? '/images/mobile/portal-hall-mobile.jpg' : '/images/portal-hall.jpg'}
-            alt="Gotham Collage Portal Hall"
-            className="w-full h-full object-cover object-center pointer-events-none"
-          />
+          <picture className="w-full h-full block">
+            <source media="(max-width: 767px)" srcSet="/images/mobile/portal-hall-mobile.jpg" />
+            <img
+              src="/images/portal-hall.jpg"
+              alt="Gotham Collage Portal Hall"
+              className="w-full h-full object-cover object-center pointer-events-none mobile-portal-img"
+            />
+          </picture>
 
-          {/* Concentric Portal Light Rings (Centered at 69.2% X, 45.2% Y on desktop, centered at 50% X, 32% Y on mobile top 60%) */}
+          {/* Concentric Portal Light Rings (Desktop only: 69.2% X, 45.2% Y) */}
           <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 mobile-portal-rings"
-            style={{ left: isMobileScreen ? '50%' : '69.2%', top: isMobileScreen ? '32%' : '45.2%' }}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 hidden md:block"
+            style={{ left: '69.2%', top: '45.2%' }}
           >
             {/* Outer Ring */}
             <div
               ref={outerRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] rounded-full border border-white/40 shadow-[0_0_35px_rgba(255,255,255,0.4),inset_0_0_30px_rgba(255,255,255,0.25)] transition-opacity duration-500 mobile-portal-outer-ring ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 md:w-[28rem] md:h-[28rem] rounded-full border border-white/40 shadow-[0_0_35px_rgba(255,255,255,0.4),inset_0_0_30px_rgba(255,255,255,0.25)] transition-opacity duration-500 ${
                 isHoveringPortalButton ? 'opacity-40' : 'opacity-15'
               }`}
             />
@@ -511,7 +523,7 @@ export default function PortalHero() {
             {/* Middle Ring (Ice Cyan) */}
             <div
               ref={midRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-[#8FE8FF]/50 shadow-[0_0_40px_rgba(143,232,255,0.5),inset_0_0_30px_rgba(143,232,255,0.3)] transition-opacity duration-500 mobile-portal-mid-ring ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 md:w-80 md:h-80 rounded-full border border-[#8FE8FF]/50 shadow-[0_0_40px_rgba(143,232,255,0.5),inset_0_0_30px_rgba(143,232,255,0.3)] transition-opacity duration-500 ${
                 isHoveringPortalButton ? 'opacity-60' : 'opacity-20'
               }`}
             />
@@ -519,7 +531,7 @@ export default function PortalHero() {
             {/* Inner Core Ring */}
             <div
               ref={innerRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-2 border-white shadow-[0_0_50px_rgba(255,255,255,0.9),inset_0_0_25px_rgba(255,255,255,0.7)] transition-opacity duration-500 mobile-portal-inner-ring ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 md:w-48 md:h-48 rounded-full border-2 border-white shadow-[0_0_50px_rgba(255,255,255,0.9),inset_0_0_25px_rgba(255,255,255,0.7)] transition-opacity duration-500 ${
                 isHoveringPortalButton ? 'opacity-85' : 'opacity-35'
               }`}
             />
@@ -527,7 +539,7 @@ export default function PortalHero() {
             {/* Core Center Glow Bloom */}
             <div
               ref={centerGlowRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-36 sm:h-36 rounded-full blur-2xl transition-all duration-700 mobile-portal-center-glow ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-36 sm:h-36 rounded-full blur-2xl transition-all duration-700 ${
                 isHoveringPortalButton ? 'opacity-90 scale-130' : 'opacity-25 scale-100'
               }`}
               style={{
@@ -537,14 +549,36 @@ export default function PortalHero() {
             />
           </div>
 
-          {/* Left-side darkness gradient for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0b]/85 via-45% to-transparent pointer-events-none" />
+          {/* Mobile Real Logo Overlay in the center of the mobile rings (phones only) */}
+          <div className="block md:hidden pointer-events-none select-none mobile-portal-logo-overlay">
+            <div className="relative flex items-center justify-center">
+              {/* Soft Cyan Pulsing Glow Bloom */}
+              <div
+                className="absolute -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 w-24 h-24 rounded-full blur-xl pointer-events-none animate-pulse"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(143,232,255,0.55) 0%, rgba(143,232,255,0.2) 45%, transparent 75%)',
+                }}
+              />
+              {/* Real Logo Overlay (transparent / screen blend) */}
+              <img
+                src="/images/mobile/gc-logo-transparent-mobile.png"
+                alt="Gotham Collage"
+                className="relative z-10 w-12 h-12 object-contain filter drop-shadow-[0_0_14px_rgba(143,232,255,0.7)] mix-blend-screen"
+              />
+            </div>
+          </div>
+
+          {/* Left-side darkness gradient for text readability (desktop only) */}
+          <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0b]/85 via-45% to-transparent pointer-events-none" />
 
           {/* Top subtle vignette */}
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#0b0b0b]/90 via-[#0b0b0b]/40 to-transparent pointer-events-none" />
 
-          {/* Bottom edge fade */}
-          <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
+          {/* Bottom edge fade (desktop only) */}
+          <div className="hidden md:block absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
+          {/* Bottom edge fade (mobile only) */}
+          <div className="block md:hidden mobile-portal-bottom-fade" />
         </div>
 
         {/* Ambient Fog Layer */}
