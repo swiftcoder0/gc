@@ -1385,7 +1385,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
           {/* Bottom Return Hint (Shown for first 4 seconds only) */}
           <div className="relative z-20 pb-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono uppercase tracking-widest">
             <span className="text-[#71717a]">
-              GOTHAM COLLAGE FOUNDRY • ALL SPEC (v2) ARCHIVES VERIFIED
+              GOTHAM COLLAGE FOUNDRY
             </span>
 
             {/* Subtle Hint: Double-tap to return to the lift */}
