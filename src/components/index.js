@@ -1,4 +1,5 @@
 // Gotham Collage UI Components Barrel Index
+export { default as CenteredLogoScreen } from './CenteredLogoScreen';
 export { default as WelcomeScreen } from './WelcomeScreen';
 export { default as MemberLogin } from './MemberLogin';
 export { default as AdminLogin } from './AdminLogin';

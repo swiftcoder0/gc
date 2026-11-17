@@ -58,6 +58,8 @@ db.exec(`
     department TEXT NOT NULL DEFAULT 'IT & DESIGN',
     title TEXT NOT NULL,
     message TEXT NOT NULL,
+    target_type TEXT NOT NULL DEFAULT 'GENERAL',
+    target_member_id TEXT DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
@@ -76,6 +78,16 @@ try {
   }
   if (!columnNames.includes('induction_message')) {
     db.exec("ALTER TABLE members ADD COLUMN induction_message TEXT");
+  }
+
+  // Migrate announcements table
+  const announceInfo = db.prepare('PRAGMA table_info(announcements)').all();
+  const announceCols = announceInfo.map(col => col.name);
+  if (!announceCols.includes('target_type')) {
+    db.exec("ALTER TABLE announcements ADD COLUMN target_type TEXT NOT NULL DEFAULT 'GENERAL'");
+  }
+  if (!announceCols.includes('target_member_id')) {
+    db.exec("ALTER TABLE announcements ADD COLUMN target_member_id TEXT DEFAULT NULL");
   }
 } catch (err) {
   console.warn('Database schema migration note:', err.message);

@@ -56,6 +56,8 @@ export default function AdminDashboard() {
   const [announcementForm, setAnnouncementForm] = useState({
     title: '',
     message: '',
+    target_type: 'GENERAL', // 'GENERAL' | 'PERSONAL'
+    target_member_id: '',
   });
 
   // Fetch all members
@@ -206,6 +208,12 @@ export default function AdminDashboard() {
   const handleCreateAnnouncement = async (e) => {
     e.preventDefault();
     if (!announcementForm.title.trim() || !announcementForm.message.trim()) return;
+
+    if (announcementForm.target_type === 'PERSONAL' && !announcementForm.target_member_id) {
+      setNotification({ type: 'error', message: 'Please select a recipient member for this personal announcement.' });
+      return;
+    }
+
     try {
       const res = await fetch('/api/admin/announcements', {
         method: 'POST',
@@ -214,12 +222,20 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        setNotification({ type: 'success', message: 'Announcement created.' });
-        setAnnouncementForm({ title: '', message: '' });
+        setNotification({ type: 'success', message: data.message || 'Announcement created.' });
+        setAnnouncementForm({
+          title: '',
+          message: '',
+          target_type: 'GENERAL',
+          target_member_id: '',
+        });
         await fetchAnnouncements();
+      } else {
+        setNotification({ type: 'error', message: data.message || 'Failed to publish announcement.' });
       }
     } catch (err) {
       console.error(err);
+      setNotification({ type: 'error', message: 'Network error publishing announcement.' });
     }
   };
 
@@ -601,10 +617,85 @@ export default function AdminDashboard() {
         {/* TAB 3: ANNOUNCEMENTS */}
         {activeTab === 'announcements' && (
           <div className="space-y-5">
-            <form onSubmit={handleCreateAnnouncement} className="p-4 rounded-xl border border-[#262838] bg-[#0A0B0E] space-y-3">
-              <h3 className="font-serif text-xs font-bold uppercase tracking-wider text-white">
-                Create Announcement
-              </h3>
+            <form onSubmit={handleCreateAnnouncement} className="p-4 sm:p-5 rounded-xl border border-[#262838] bg-[#0A0B0E] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#1E202B] pb-3">
+                <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-white">
+                  Create Announcement
+                </h3>
+                <span className="text-[10px] font-mono text-[#8A8F9E] uppercase tracking-wider">
+                  Broadcast or Direct Message
+                </span>
+              </div>
+
+              {/* Audience Type Selection */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono uppercase text-[#8A8F9E] tracking-wider">
+                  Audience Type
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAnnouncementForm({ ...announcementForm, target_type: 'GENERAL', target_member_id: '' })}
+                    className={`px-3 py-2.5 rounded-lg border text-left text-xs font-mono transition-all flex items-center justify-between ${
+                      announcementForm.target_type === 'GENERAL'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-200'
+                        : 'border-[#262836] bg-[#08080B] text-[#8A8F9E] hover:text-white hover:border-[#383B4E]'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold uppercase tracking-wider">🌐 General (All Members)</div>
+                      <div className="text-[10px] opacity-75">Visible to every member in the studio</div>
+                    </div>
+                    {announcementForm.target_type === 'GENERAL' && (
+                      <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAnnouncementForm({ ...announcementForm, target_type: 'PERSONAL' })}
+                    className={`px-3 py-2.5 rounded-lg border text-left text-xs font-mono transition-all flex items-center justify-between ${
+                      announcementForm.target_type === 'PERSONAL'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-200'
+                        : 'border-[#262836] bg-[#08080B] text-[#8A8F9E] hover:text-white hover:border-[#383B4E]'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold uppercase tracking-wider">👤 Personal (Direct to Member)</div>
+                      <div className="text-[10px] opacity-75">Delivered only to a specific member</div>
+                    </div>
+                    {announcementForm.target_type === 'PERSONAL' && (
+                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Member Selection Dropdown (Only when Personal is selected) */}
+              {announcementForm.target_type === 'PERSONAL' && (
+                <div className="space-y-1 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 animate-fade-in">
+                  <label className="text-[10px] font-mono uppercase text-amber-300 font-semibold tracking-wider">
+                    Select Target Member *
+                  </label>
+                  <select
+                    required
+                    value={announcementForm.target_member_id}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, target_member_id: e.target.value })}
+                    className="w-full px-3 py-2 rounded bg-[#08080B] border border-amber-500/40 text-xs text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="">-- Choose Member --</option>
+                    {members.map((m) => (
+                      <option key={m.member_id} value={m.member_id}>
+                        {m.full_name} ({m.member_id}) - {m.designation || 'Member'}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] font-mono text-zinc-400 pt-0.5">
+                    Only this member will see this announcement in their dashboard.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="text-[10px] font-mono uppercase text-[#8A8F9E]">Title</label>
                 <input
@@ -612,10 +703,11 @@ export default function AdminDashboard() {
                   required
                   value={announcementForm.title}
                   onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
-                  placeholder="e.g. Studio Maintenance"
-                  className="w-full px-3 py-2 rounded bg-[#08080B] border border-[#262836] text-xs text-white focus:outline-none"
+                  placeholder={announcementForm.target_type === 'PERSONAL' ? "e.g. Schedule review for your venture" : "e.g. Studio All-Hands Briefing"}
+                  className="w-full px-3 py-2 rounded bg-[#08080B] border border-[#262836] text-xs text-white focus:outline-none focus:border-[#4B4F69]"
                 />
               </div>
+
               <div className="space-y-1">
                 <label className="text-[10px] font-mono uppercase text-[#8A8F9E]">Message</label>
                 <textarea
@@ -623,35 +715,79 @@ export default function AdminDashboard() {
                   required
                   value={announcementForm.message}
                   onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
-                  placeholder="Enter message..."
-                  className="w-full px-3 py-2 rounded bg-[#08080B] border border-[#262836] text-xs text-white focus:outline-none"
+                  placeholder="Enter announcement text..."
+                  className="w-full px-3 py-2 rounded bg-[#08080B] border border-[#262836] text-xs text-white focus:outline-none focus:border-[#4B4F69]"
                 />
               </div>
+
               <div className="flex justify-end pt-1">
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded bg-white text-black font-mono text-xs font-bold uppercase tracking-wider hover:bg-zinc-200"
+                  className="px-4 py-2 rounded bg-white text-black font-mono text-xs font-bold uppercase tracking-wider hover:bg-zinc-200 transition-all active:scale-95 flex items-center space-x-1.5"
                 >
-                  Publish Announcement
+                  <span>{announcementForm.target_type === 'PERSONAL' ? 'Send Personal Announcement' : 'Publish General Announcement'}</span>
                 </button>
               </div>
             </form>
 
-            <div className="space-y-2">
-              {announcements.map((item) => (
-                <div key={item.id} className="p-3.5 rounded-lg border border-[#20222D] bg-[#12131A] flex items-start justify-between">
-                  <div>
-                    <h5 className="font-serif text-sm font-bold text-white">{item.title}</h5>
-                    <p className="text-xs text-[#9599AB] mt-1">{item.message}</p>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteAnnouncement(item.id)}
-                    className="p-1 text-[#7B8094] hover:text-red-400"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+            {/* List of Announcements */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h4 className="font-mono text-xs uppercase tracking-wider text-white font-bold">
+                  Published Announcements ({announcements.length})
+                </h4>
+                <button
+                  onClick={fetchAnnouncements}
+                  className="text-[10px] font-mono uppercase text-[#8A8F9E] hover:text-white"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {announcements.length === 0 ? (
+                <div className="p-8 text-center border border-[#20222D] rounded-lg bg-[#0C0D12] text-xs font-mono text-[#7B8094]">
+                  No announcements published yet.
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-2">
+                  {announcements.map((item) => (
+                    <div key={item.id} className="p-3.5 rounded-lg border border-[#20222D] bg-[#12131A] flex items-start justify-between gap-3 hover:border-[#2D3040] transition-colors">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {item.target_type === 'PERSONAL' ? (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              <span>👤 Direct:</span>
+                              <span className="text-white">{item.target_member_name || item.target_member_id}</span>
+                              <span className="text-amber-400">({item.target_member_id})</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                              <span>🌐 General (All Members)</span>
+                            </span>
+                          )}
+
+                          {item.created_at && (
+                            <span className="text-[10px] font-mono text-[#6A6E82]">
+                              {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+
+                        <h5 className="font-serif text-sm font-bold text-white tracking-wide">{item.title}</h5>
+                        <p className="text-xs text-[#9599AB] whitespace-pre-wrap leading-relaxed">{item.message}</p>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteAnnouncement(item.id)}
+                        className="p-1.5 text-[#7B8094] hover:text-red-400 hover:bg-red-500/10 rounded transition-colors flex-shrink-0"
+                        title="Delete announcement"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FileText, LogOut } from 'lucide-react';
 
@@ -8,13 +8,36 @@ import { FileText, LogOut } from 'lucide-react';
  * - Natural unshaded Gotham Tower background view
  * - Minimal greeting ("Hi, [First Name]")
  * - Induction document retrieval
- * - Announcements display
+ * - Announcements display (General Broadcasts + Personal Direct Messages)
  */
 export default function MemberDashboard() {
   const { user, logout, viewWelcomeLetter } = useAuth();
+  const [announcements, setAnnouncements] = useState([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
 
   // Extract first name (e.g. 'Marcus' from 'Marcus Chen')
   const firstName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : 'Member';
+
+  // Fetch announcements for this member (general + personal)
+  useEffect(() => {
+    async function loadAnnouncements() {
+      try {
+        setLoadingAnnouncements(true);
+        const res = await fetch('/api/announcements');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.announcements)) {
+            setAnnouncements(data.announcements);
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching announcements:', err);
+      } finally {
+        setLoadingAnnouncements(false);
+      }
+    }
+    loadAnnouncements();
+  }, []);
 
   return (
     <div className="relative h-[100dvh] flex flex-col justify-between p-4 sm:p-12 lg:p-16 text-white overflow-hidden">
@@ -66,13 +89,65 @@ export default function MemberDashboard() {
           GOTHAM COLLAGE
         </p>
 
-        <h2 className="font-serif text-xs tracking-widest uppercase text-zinc-200 font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-          Announcements
-        </h2>
-
-        <div className="pt-1 text-[11px] font-mono text-zinc-300 tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-          No Active Announcements
+        <div className="flex items-center space-x-2">
+          <h2 className="font-serif text-xs tracking-widest uppercase text-zinc-200 font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+            Announcements
+          </h2>
+          {announcements.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+              {announcements.length}
+            </span>
+          )}
         </div>
+
+        {loadingAnnouncements ? (
+          <div className="pt-1 text-[11px] font-mono text-zinc-400 tracking-wider uppercase animate-pulse">
+            Checking announcements...
+          </div>
+        ) : announcements.length === 0 ? (
+          <div className="pt-1 text-[11px] font-mono text-zinc-300 tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+            No Active Announcements
+          </div>
+        ) : (
+          <div className="max-h-28 sm:max-h-44 overflow-y-auto space-y-2 pr-1 pt-1">
+            {announcements.map((item) => {
+              const isPersonal = item.target_type === 'PERSONAL';
+              return (
+                <div
+                  key={item.id}
+                  className={`p-2.5 sm:p-3 rounded-lg backdrop-blur-md border text-left transition-all ${
+                    isPersonal
+                      ? 'bg-amber-950/50 border-amber-500/50 shadow-[0_2px_12px_rgba(245,158,11,0.2)]'
+                      : 'bg-black/70 border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.85)]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 pb-1">
+                    <span
+                      className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${
+                        isPersonal
+                          ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50'
+                          : 'bg-white/10 text-zinc-300 border border-white/20'
+                      }`}
+                    >
+                      {isPersonal ? '★ Direct to You' : 'Studio Broadcast'}
+                    </span>
+                    {item.created_at && (
+                      <span className="text-[9px] font-mono text-zinc-400">
+                        {new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-serif text-xs font-bold text-white drop-shadow leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-[11px] text-zinc-300 font-sans leading-relaxed mt-1 whitespace-pre-wrap">
+                    {item.message}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

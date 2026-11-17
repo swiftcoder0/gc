@@ -92,6 +92,40 @@ export function authenticate(req, res, next) {
   next();
 }
 
+export function getOptionalMember(req) {
+  const token = req.cookies?.gotham_session || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+
+  try {
+    const stmt = db.prepare(`
+      SELECT s.session_token, s.expires_at, m.id, m.member_id, m.full_name, m.email, 
+             m.department, m.designation, m.role_type, m.role_title, m.induction_message,
+             m.has_acknowledged_welcome, m.acknowledged_at, m.created_at, m.last_login_at
+      FROM sessions s
+      JOIN members m ON s.member_id = m.member_id
+      WHERE s.session_token = ?
+    `);
+    const row = stmt.get(token);
+    if (!row) return null;
+    if (new Date(row.expires_at) < new Date()) {
+      deleteSession(token);
+      return null;
+    }
+    return {
+      id: row.id,
+      member_id: row.member_id,
+      full_name: row.full_name,
+      email: row.email,
+      department: row.department || 'IT & DESIGN',
+      designation: row.designation || row.role_title || 'Member',
+      role_type: row.role_type || 'MEMBER',
+      role_title: row.designation || row.role_title || 'Member',
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 export function logAudit(memberId, action, details, ipAddress) {
   try {
     const stmt = db.prepare(`

@@ -7,6 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        gc: {
+          black: '#0b0b0b',
+          charcoal: '#141414',
+          surface: '#121212',
+          border: '#222222',
+          text: '#e8e8e6',
+          textMuted: '#8a8a88',
+          silver: '#c0c0c0',
+          gold: '#F5B800',
+          goldGlow: 'rgba(245, 184, 0, 0.5)',
+          goldBorder: 'rgba(245, 184, 0, 0.4)',
+        },
         gotham: {
           black: '#08080A',
           dark: '#0D0E11',
@@ -27,8 +39,9 @@ export default {
         }
       },
       fontFamily: {
+        display: ['Unbounded', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
         serif: ['Cinzel', 'Playfair Display', 'serif'],
-        sans: ['Space Grotesk', 'Inter', 'sans-serif'],
         editorial: ['Syne', 'sans-serif'],
         script: ['"Great Vibes"', 'cursive'],
         mono: ['"JetBrains Mono"', 'monospace'],

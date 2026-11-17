@@ -5,7 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
-import { hashPassword, verifyPassword, createSession, deleteSession, authenticate, logAudit } from './auth.js';
+import { hashPassword, verifyPassword, createSession, deleteSession, authenticate, getOptionalMember, logAudit } from './auth.js';
 import { seedDatabase } from './seed.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -290,12 +290,48 @@ app.post('/api/auth/logout', (req, res) => {
 
 // --- ANNOUNCEMENTS ROUTES ---
 
-// Get announcements
+// Get announcements (personalized for member, all for admin, general for public)
 app.get('/api/announcements', (req, res) => {
   try {
-    const list = db.prepare(`SELECT * FROM announcements ORDER BY id DESC`).all();
+    const currentMember = getOptionalMember(req);
+    const isAdmin = currentMember && (
+      currentMember.department === 'ADMIN' ||
+      currentMember.member_id.toLowerCase() === 'admin' ||
+      currentMember.member_id.toLowerCase() === 'gc-adm-001'
+    );
+
+    let list;
+    if (isAdmin) {
+      // Admin sees ALL announcements (with target member name joined if personal)
+      list = db.prepare(`
+        SELECT a.*, m.full_name as target_member_name
+        FROM announcements a
+        LEFT JOIN members m ON UPPER(a.target_member_id) = UPPER(m.member_id)
+        ORDER BY a.id DESC
+      `).all();
+    } else if (currentMember) {
+      // Logged-in Member sees:
+      // 1. General announcements
+      // 2. Personal announcements specifically sent to their member_id
+      list = db.prepare(`
+        SELECT * FROM announcements
+        WHERE target_type = 'GENERAL'
+           OR target_type IS NULL
+           OR UPPER(target_member_id) = UPPER(?)
+        ORDER BY id DESC
+      `).all(currentMember.member_id);
+    } else {
+      // Unauthenticated / public: only general
+      list = db.prepare(`
+        SELECT * FROM announcements
+        WHERE target_type = 'GENERAL' OR target_type IS NULL
+        ORDER BY id DESC
+      `).all();
+    }
+
     return res.json({ success: true, announcements: list });
   } catch (err) {
+    console.error('Error retrieving announcements:', err);
     return res.status(500).json({ success: false, message: 'Error retrieving announcements.' });
   }
 });
@@ -465,19 +501,36 @@ app.delete('/api/admin/members/:member_id', (req, res) => {
 
 // 6. Announcements Management (Admin)
 app.post('/api/admin/announcements', (req, res) => {
-  const { title, message } = req.body;
+  const { title, message, target_type, target_member_id } = req.body;
   if (!title || !message) {
     return res.status(400).json({ success: false, message: 'Title and message are required.' });
   }
 
+  const cleanTargetType = (target_type === 'PERSONAL') ? 'PERSONAL' : 'GENERAL';
+  let cleanTargetMemberId = null;
+
+  if (cleanTargetType === 'PERSONAL') {
+    if (!target_member_id || !target_member_id.trim()) {
+      return res.status(400).json({ success: false, message: 'A specific member must be selected for personal announcements.' });
+    }
+    const cleanId = target_member_id.trim().toUpperCase();
+    const targetMember = db.prepare('SELECT member_id, full_name FROM members WHERE UPPER(member_id) = ?').get(cleanId);
+    if (!targetMember) {
+      return res.status(404).json({ success: false, message: `Member ${cleanId} does not exist.` });
+    }
+    cleanTargetMemberId = targetMember.member_id;
+  }
+
   const result = db.prepare(`
-    INSERT INTO announcements (department, title, message, created_at)
-    VALUES ('GENERAL', ?, ?, datetime('now'))
-  `).run(title.trim(), message.trim());
+    INSERT INTO announcements (department, title, message, target_type, target_member_id, created_at, updated_at)
+    VALUES ('GENERAL', ?, ?, ?, ?, datetime('now'), datetime('now'))
+  `).run(title.trim(), message.trim(), cleanTargetType, cleanTargetMemberId);
 
   return res.json({
     success: true,
-    message: 'Announcement published.',
+    message: cleanTargetType === 'PERSONAL' 
+      ? `Personal announcement sent to ${cleanTargetMemberId}.` 
+      : 'General announcement published to all members.',
     id: result.lastInsertRowid,
   });
 });
