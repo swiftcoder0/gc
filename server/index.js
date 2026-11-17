@@ -26,12 +26,14 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Serve public static assets (including official Gotham images, audio, video)
+app.use('/images', express.static(path.resolve(__dirname, '../public/images')));
 app.use('/assets', express.static(path.resolve(__dirname, '../public/assets'), {
   maxAge: '1d',
   setHeaders: (res) => {
     res.setHeader('Accept-Ranges', 'bytes');
   },
 }));
+app.use(express.static(path.resolve(__dirname, '../public')));
 
 // --- AUTHENTICATION ROUTES ---
 

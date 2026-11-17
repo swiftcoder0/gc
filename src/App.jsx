@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from './context/AuthContext';
 import {
   Navbar,
+  PortalHero,
   CenteredLogoScreen,
   WelcomeScreen,
   MemberLogin,
@@ -32,9 +33,9 @@ export default function App() {
     );
   }
 
-  // If on initial landing view, render the pure black centered logo milestone page
+  // If on initial landing view, render Screen 1: The Portal Hero
   if (currentScreen === 'welcome') {
-    return <CenteredLogoScreen />;
+    return <PortalHero />;
   }
 
   return (
