@@ -4,18 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { config } from '../config';
 
 /**
- * PortalHero — Screen 1: The Portal with Full Interactions
- * 
- * Interactions:
- * 1. Parallax Depth: Mouse movement shifts background, fog layer, and hero content by different amounts.
- *    (Disabled on phones and when prefers-reduced-motion is active).
- * 2. Hover Glow: Hovering "Enter Our World" or "Enter Portal" intensely amplifies the portal's amber/gold glow.
- * 3. Fly-Through Sequence:
- *    - Triggered by clicking either button or scrolling down once.
- *    - Zooms toward portal center (50.9% 42.7%) for ~2.5s with brightness building up.
- *    - Cross-fades into /images/portal-city.jpg, followed by a crisp white flash.
- *    - Transitions into an empty black placeholder called "lobby".
- *    - Mobile/reduced-motion: Instant, lightweight fade directly to "lobby".
+ * PortalHero — Screen 1: The Portal
+ * Direct cinematic forward plunge straight under and through the concentric portal rings.
+ * - Glowing white rings in the artwork naturally illuminate on button hover
+ * - Zero artificial floating blobs beside the ring
+ * - Zero blinding white flashes — direct seamless transition into the lobby
  */
 export default function PortalHero() {
   const { openMemberLogin } = useAuth();
@@ -30,9 +23,8 @@ export default function PortalHero() {
   const bgRef = useRef(null);
   const fogRef = useRef(null);
   const contentRef = useRef(null);
-  const portalGlowRef = useRef(null);
-  const flashOverlayRef = useRef(null);
   const cityOverlayRef = useRef(null);
+  const blackFadeRef = useRef(null);
 
   // Check preferences
   const isReducedMotion = useRef(false);
@@ -54,7 +46,7 @@ export default function PortalHero() {
       const xNorm = (e.clientX - innerWidth / 2) / (innerWidth / 2); // -1 to 1
       const yNorm = (e.clientY - innerHeight / 2) / (innerHeight / 2); // -1 to 1
 
-      // Subtle, layered parallax depth
+      // Layered parallax depth
       if (bgRef.current) {
         gsap.to(bgRef.current, {
           x: xNorm * -14,
@@ -66,8 +58,8 @@ export default function PortalHero() {
 
       if (fogRef.current) {
         gsap.to(fogRef.current, {
-          x: xNorm * 22,
-          y: yNorm * 12,
+          x: xNorm * 20,
+          y: yNorm * 10,
           duration: 1.6,
           ease: 'power1.out',
         });
@@ -87,21 +79,21 @@ export default function PortalHero() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [currentView, isTransitioning]);
 
-  // 2. Fly-through Transition Handler
+  // 2. Direct Fly-through: Straight through the center of the rings into the lobby
   const triggerFlyThrough = () => {
     if (isTransitioning || currentView === 'lobby') return;
     setIsTransitioning(true);
 
-    // Lighter Mode for Phones & Reduced Motion: Immediate clean transition
+    // Lighter Mode for Mobile & Reduced Motion
     if (isReducedMotion.current || isMobile.current) {
-      if (flashOverlayRef.current) {
-        gsap.to(flashOverlayRef.current, {
+      if (blackFadeRef.current) {
+        gsap.to(blackFadeRef.current, {
           opacity: 1,
-          duration: 0.25,
+          duration: 0.3,
           onComplete: () => {
             setCurrentView('lobby');
             setIsTransitioning(false);
-            gsap.to(flashOverlayRef.current, { opacity: 0, duration: 0.35 });
+            gsap.to(blackFadeRef.current, { opacity: 0, duration: 0.3 });
           },
         });
       } else {
@@ -111,7 +103,7 @@ export default function PortalHero() {
       return;
     }
 
-    // Full 2.5s Cinematic Fly-through Sequence
+    // Full Cinematic Sequence: Direct Forward Zoom Through the Rings
     const tl = gsap.timeline({
       onComplete: () => {
         setCurrentView('lobby');
@@ -121,72 +113,56 @@ export default function PortalHero() {
 
     // Fade out text UI immediately
     if (contentRef.current) {
-      tl.to(contentRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' }, 0);
+      tl.to(contentRef.current, { opacity: 0, duration: 0.4, ease: 'power2.out' }, 0);
     }
 
-    // Zoom camera directly toward portal rings center (50% 50%)
+    // Zoom camera directly forward into the center of the portal rings
     if (bgRef.current) {
       tl.to(
         bgRef.current,
         {
-          scale: 5.5,
+          scale: 6.2,
           transformOrigin: '50% 50%',
-          filter: 'brightness(3.5) contrast(1.2)',
-          duration: 2.5,
-          ease: 'power2.in',
+          duration: 2.2,
+          ease: 'power3.in',
         },
         0
       );
     }
 
-    // Intensely amplify the WHITE portal light tunnel
-    if (portalGlowRef.current) {
-      tl.to(
-        portalGlowRef.current,
-        {
-          opacity: 1,
-          scale: 4.5,
-          duration: 2.3,
-          ease: 'power2.in',
-        },
-        0
-      );
-    }
-
-    // Cross-fade into /images/portal-city.jpg near the climax of the zoom (at 1.7s)
+    // As you pass through the rings, cross-fade into the city beyond
     if (cityOverlayRef.current) {
       tl.to(
         cityOverlayRef.current,
         {
           opacity: 1,
-          scale: 1.15,
-          duration: 0.7,
+          scale: 1.25,
+          duration: 0.65,
           ease: 'power2.inOut',
         },
-        1.7
+        1.55
       );
     }
 
-    // Short crisp white flash at 2.35s
-    if (flashOverlayRef.current) {
+    // Seamless cinematic dissolve to black right before entering the lobby
+    if (blackFadeRef.current) {
       tl.to(
-        flashOverlayRef.current,
+        blackFadeRef.current,
         {
           opacity: 1,
-          duration: 0.22,
-          ease: 'power3.in',
+          duration: 0.35,
+          ease: 'power2.in',
         },
-        2.32
+        1.95
       );
-      // Flash fades out over the new lobby
       tl.to(
-        flashOverlayRef.current,
+        blackFadeRef.current,
         {
           opacity: 0,
-          duration: 0.45,
+          duration: 0.4,
           ease: 'power2.out',
         },
-        2.54
+        2.25
       );
     }
   };
@@ -238,7 +214,7 @@ export default function PortalHero() {
         />
 
         {/* Center: Lobby Placeholder Information */}
-        <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-lg">
+        <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-lg animate-fade-in">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-[#F5B800]/40 bg-[#F5B800]/10 text-[#F5B800] text-[10px] font-mono tracking-[0.25em] uppercase">
             <span>FLOOR 00</span>
             <span>•</span>
@@ -256,7 +232,6 @@ export default function PortalHero() {
           <div className="pt-4 flex items-center space-x-4">
             <button
               onClick={() => {
-                // Reset to portal view
                 setCurrentView('portal');
                 setIsTransitioning(false);
               }}
@@ -274,10 +249,10 @@ export default function PortalHero() {
           </div>
         </div>
 
-        {/* Flash Overlay (for transitions back and forth) */}
+        {/* Fade overlay for clean return */}
         <div
-          ref={flashOverlayRef}
-          className="pointer-events-none fixed inset-0 z-50 bg-white opacity-0"
+          ref={blackFadeRef}
+          className="pointer-events-none fixed inset-0 z-50 bg-[#0b0b0b] opacity-0"
         />
       </div>
     );
@@ -289,10 +264,15 @@ export default function PortalHero() {
       ref={containerRef}
       className="relative w-full h-[100dvh] min-h-[650px] bg-[#0b0b0b] text-[#e8e8e6] overflow-hidden select-none font-sans"
     >
-      {/* 1. Fullscreen Background Image with Parallax & Zoom Container */}
+      {/* 1. Fullscreen Background Image with Parallax & Hover Glow */}
       <div
         ref={bgRef}
-        className="absolute inset-0 z-0 will-change-transform scale-[1.03]"
+        className="absolute inset-0 z-0 will-change-transform scale-[1.03] transition-[filter] duration-700 ease-out"
+        style={{
+          filter: isHoveringPortalButton
+            ? 'brightness(1.22) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.25))'
+            : 'brightness(1.0) contrast(1.0)',
+        }}
       >
         <img
           src="/images/portal-hall.jpg"
@@ -310,23 +290,7 @@ export default function PortalHero() {
         <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
       </div>
 
-      {/* 2. Interactive Portal Light Glow Layer (Pure WHITE radiant glow, centers exactly at 50% 50%) */}
-      <div
-        ref={portalGlowRef}
-        className={`pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ${
-          isHoveringPortalButton ? 'opacity-95 scale-140' : 'opacity-40 scale-100'
-        }`}
-        style={{ left: '50%', top: '50%' }}
-      >
-        <div
-          className="w-44 h-44 sm:w-64 sm:h-64 md:w-96 md:h-96 rounded-full blur-3xl"
-          style={{
-            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.5) 35%, rgba(255,255,255,0.15) 65%, transparent 80%)',
-          }}
-        />
-      </div>
-
-      {/* 3. Fog Layer with Independent Parallax Speed */}
+      {/* 2. Fog Layer with Independent Parallax Speed */}
       <div
         ref={fogRef}
         className="pointer-events-none absolute inset-x-0 bottom-0 h-64 z-10 opacity-30 will-change-transform"
@@ -335,26 +299,26 @@ export default function PortalHero() {
         }}
       />
 
-      {/* 4. Cross-fade City Skyline Overlay for Fly-Through Transition (/images/portal-city.jpg) */}
+      {/* 3. Cross-fade City Skyline Overlay for Seamless Transition */}
       <div
         ref={cityOverlayRef}
-        className="pointer-events-none absolute inset-0 z-25 opacity-0 will-change-transform"
+        className="pointer-events-none absolute inset-0 z-20 opacity-0 will-change-transform"
       >
         <img
           src="/images/portal-city.jpg"
           alt="Gotham City Beyond"
           className="w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-[#0b0b0b]/40" />
+        <div className="absolute inset-0 bg-[#0b0b0b]/30" />
       </div>
 
-      {/* 5. Flash Transition Overlay */}
+      {/* 4. Smooth Cinematic Black Dissolve Overlay */}
       <div
-        ref={flashOverlayRef}
-        className="pointer-events-none fixed inset-0 z-50 bg-white opacity-0"
+        ref={blackFadeRef}
+        className="pointer-events-none fixed inset-0 z-50 bg-[#0b0b0b] opacity-0"
       />
 
-      {/* 6. Top Navigation Bar */}
+      {/* 5. Top Navigation Bar */}
       <header className="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-6 flex items-center justify-between">
         {/* Left: Logo + GOTHAM COLLAGE */}
         <a href="/" className="flex items-center space-x-3 group">
@@ -387,7 +351,7 @@ export default function PortalHero() {
           ))}
         </nav>
 
-        {/* Right: Gold-outlined "Enter Portal" button (Intensifies glow on hover + triggers fly-through on click) */}
+        {/* Right: Gold-outlined "Enter Portal" button (Rings glow brighter on hover + triggers fly-through on click) */}
         <div className="flex items-center space-x-3">
           <button
             onClick={triggerFlyThrough}
@@ -400,7 +364,7 @@ export default function PortalHero() {
         </div>
       </header>
 
-      {/* 7. Hero Content with Foreground Parallax Depth */}
+      {/* 6. Hero Content with Foreground Parallax Depth */}
       <div
         ref={contentRef}
         className="relative z-20 h-[calc(100%-140px)] px-6 sm:px-10 lg:px-14 flex flex-col justify-center max-w-2xl lg:max-w-3xl will-change-transform"
@@ -434,7 +398,7 @@ export default function PortalHero() {
             A venture studio built by ambitious minds.
           </p>
 
-          {/* Hero Action Button: "Enter Our World →" (Intensifies portal glow on hover, triggers fly-through on click) */}
+          {/* Hero Action Button: "Enter Our World →" (Rings glow brighter on hover, triggers fly-through on click) */}
           <div className="pt-2 sm:pt-4">
             <button
               onClick={triggerFlyThrough}
@@ -451,7 +415,7 @@ export default function PortalHero() {
         </div>
       </div>
 
-      {/* 8. Scroll Down Hint (Clicking it also triggers the fly-through) */}
+      {/* 7. Scroll Down Hint */}
       <button
         onClick={triggerFlyThrough}
         className="absolute bottom-6 sm:bottom-8 left-6 sm:left-10 lg:left-14 z-20 flex items-center space-x-3 text-[11px] font-mono uppercase tracking-[0.25em] text-[#8a8a88] hover:text-white transition-colors cursor-pointer group"
