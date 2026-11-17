@@ -174,6 +174,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
   const [targetFloor, setTargetFloor] = useState('01');
   const [displayFloor, setDisplayFloor] = useState('01');
   const [highlightedFloor, setHighlightedFloor] = useState('01');
+  const [travelDirection, setTravelDirection] = useState('UP'); // 'UP' | 'DOWN'
 
   // State Machine tracker
   const [stateName, setStateName] = useState('IDLE'); // 'IDLE' | 'CLOSING' | 'MOVING' | 'ARRIVING' | 'OPENING' | 'REVEAL' | 'CONTENT' | 'RETURN'
@@ -380,7 +381,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
     const fromNum = parseInt(currentFloor, 10);
     const toNum = parseInt(destFloor, 10);
-    const isGoingUp = toNum > fromNum;
+    const isGoingUp = toNum >= fromNum;
+    setTravelDirection(isGoingUp ? 'UP' : 'DOWN');
 
     // Set direction in starfield: 1 = stars move down (going up); -1 = stars move up (going down)
     starMotionRef.current.direction = isGoingUp ? 1 : -1;
@@ -835,8 +837,16 @@ export default function ElevatorLobby({ onBackToPortal }) {
             ========================================================== */}
             <div className="relative w-full h-13 bg-[#0e0e11] border-b border-[#202025] flex items-center justify-between px-5 z-30">
               <div className="flex items-center space-x-1.5 font-mono text-xs">
-                <span className={`text-[#8FE8FF] font-bold ${stateName === 'MOVING' ? 'animate-pulse' : ''}`}>▲</span>
-                <span className="text-zinc-600 font-bold">▼</span>
+                <span className={`font-bold transition-colors ${
+                  travelDirection === 'UP'
+                    ? `text-[#8FE8FF] ${stateName === 'MOVING' ? 'animate-pulse' : ''}`
+                    : 'text-zinc-600'
+                }`}>▲</span>
+                <span className={`font-bold transition-colors ${
+                  travelDirection === 'DOWN'
+                    ? `text-[#8FE8FF] ${stateName === 'MOVING' ? 'animate-pulse' : ''}`
+                    : 'text-zinc-600'
+                }`}>▼</span>
               </div>
 
               {/* Digital LED Readout in Ice Cyan */}
