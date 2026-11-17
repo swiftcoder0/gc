@@ -157,7 +157,9 @@ export default function ElevatorLobby({ onBackToPortal }) {
   const [targetFloor, setTargetFloor] = useState(initialFloor);
   const [displayFloor, setDisplayFloor] = useState(() => (initialFloor === 'lobby' ? '00' : initialFloor));
   const [direction, setDirection] = useState(null); // 'up' | 'down' | null
-  const [doorsOpen, setDoorsOpen] = useState(true); // Open initially in lobby
+  
+  // Doors start CLOSED in the lobby with the GC seal meeting in the middle; only open when clicked!
+  const [doorsOpen, setDoorsOpen] = useState(() => (initialFloor !== 'lobby'));
   const [isFlickering, setIsFlickering] = useState(false);
   const [dingFlash, setDingFlash] = useState(false);
   const [highlightedFloor, setHighlightedFloor] = useState('01');
@@ -226,6 +228,15 @@ export default function ElevatorLobby({ onBackToPortal }) {
     }
   };
 
+  // Toggle GC elevator doors directly when clicked in the lobby
+  const handleToggleLiftDoors = () => {
+    if (isRideInProgress || currentFloor !== 'lobby') return;
+    setDoorsOpen((prev) => {
+      audio.playDoorSlide();
+      return !prev;
+    });
+  };
+
   // Helper: jump between floors
   const handleFloorJump = (destination) => {
     if (isRideInProgress) return; // Clicks during ride ignored
@@ -239,15 +250,9 @@ export default function ElevatorLobby({ onBackToPortal }) {
     setTargetFloor(destination);
     setHighlightedFloor(destination === 'lobby' ? '01' : destination);
 
-    // 1. STATE: 'closing'
-    setRideState('closing');
-    setDoorsOpen(false); // Doors slide shut with logo meeting in the middle
-    audio.playDoorSlide();
-
-    // 2. STATE: 'moving' (after doors shut)
-    setTimeout(() => {
+    const startTransitMotion = () => {
       setRideState('moving');
-      audio.playHum(1.4);
+      audio.playHum(1.3);
 
       // Digital counting flicker sequence
       const steps = [];
@@ -262,7 +267,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
       }
 
       // Step through intermediate floors
-      const stepDuration = 1200 / (steps.length || 1);
+      const stepDuration = 1100 / (steps.length || 1);
       steps.forEach((stepVal, idx) => {
         setTimeout(() => {
           setDisplayFloor(stepVal);
@@ -278,7 +283,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         audio.playDing();
         setDisplayFloor(destination === 'lobby' ? '00' : destination);
 
-        // Doors slide open
+        // Doors slide open onto destination floor
         setTimeout(() => {
           setDoorsOpen(true);
           audio.playDoorSlide();
@@ -291,8 +296,20 @@ export default function ElevatorLobby({ onBackToPortal }) {
           setDingFlash(false);
           setDirection(null);
         }, 1000);
-      }, 1400);
-    }, 850);
+      }, 1300);
+    };
+
+    // If doors are open, slide them shut first with logo meeting in the middle
+    if (doorsOpen) {
+      setRideState('closing');
+      setDoorsOpen(false);
+      audio.playDoorSlide();
+      setTimeout(startTransitMotion, 850);
+    } else {
+      // Doors already closed in lobby: start moving immediately!
+      setRideState('moving');
+      startTransitMotion();
+    }
   };
 
   // Keyboard navigation: ArrowUp, ArrowDown, Enter
@@ -349,10 +366,10 @@ export default function ElevatorLobby({ onBackToPortal }) {
           }}
         />
 
-        {/* Ambient Dark Overlays for Extreme Contrast */}
+        {/* Ambient Dark Overlays — Shrouds background secondary opening so only the central GC lift exists */}
         <div className="absolute inset-0 bg-[#0b0b0b]/40 pointer-events-none" />
         <div className="absolute inset-y-0 left-0 w-full md:w-5/12 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0b]/85 to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-full md:w-5/12 bg-gradient-to-l from-[#0b0b0b] via-[#0b0b0b]/75 to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-full md:w-7/12 bg-gradient-to-l from-[#0b0b0b] via-[#0b0b0b]/95 via-50% to-transparent pointer-events-none" />
         <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#0b0b0b]/95 via-[#0b0b0b]/60 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
       </div>
@@ -537,9 +554,15 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {/* Center: Live Elevator Doors & Aperture Screen */}
             <div className="relative flex items-center justify-center gap-4 sm:gap-6 z-20">
               
-              {/* Elevator Door Surround Box */}
-              <div className="relative w-[280px] sm:w-[350px] md:w-[390px] lg:w-[420px] aspect-[3/4.2] max-h-[540px] flex items-center justify-center">
-                <div className="relative w-full h-full rounded-2xl overflow-hidden border border-[#2d2d2d] bg-[#0a0a0a] shadow-[0_15px_50px_rgba(0,0,0,0.95)] flex items-center justify-center p-3 sm:p-3.5">
+              {/* Elevator Door Surround Box — Click to open/close GC lift when in lobby */}
+              <div
+                onClick={handleToggleLiftDoors}
+                className={`relative w-[280px] sm:w-[350px] md:w-[390px] lg:w-[420px] aspect-[3/4.2] max-h-[540px] flex items-center justify-center group ${
+                  currentFloor === 'lobby' && !isRideInProgress ? 'cursor-pointer' : ''
+                }`}
+                title={currentFloor === 'lobby' ? (doorsOpen ? 'Click to close GC lift' : 'Click to open GC lift') : ''}
+              >
+                <div className="relative w-full h-full rounded-2xl overflow-hidden border border-[#2d2d2d] group-hover:border-[#F5B800]/50 bg-[#0a0a0a] shadow-[0_15px_50px_rgba(0,0,0,0.95)] flex items-center justify-center p-3 sm:p-3.5 transition-colors duration-300">
                   
                   {/* Header: Up/Down Direction Arrows + Digital Floor Display */}
                   <div className="absolute top-3.5 inset-x-0 flex items-center justify-between px-6 z-25 pointer-events-none">
@@ -689,6 +712,16 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     {/* 5. Center Door Seam Recess */}
                     {!doorsOpen && (
                       <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-black shadow-[0_0_6px_rgba(0,0,0,0.9)] z-25 pointer-events-none" />
+                    )}
+
+                    {/* 6. Click to Open / Close Indicator in Lobby */}
+                    {currentFloor === 'lobby' && !isRideInProgress && (
+                      <div className="absolute bottom-5 inset-x-0 flex justify-center z-30 pointer-events-none">
+                        <div className="px-3 py-1 rounded-full border border-[#F5B800]/40 bg-black/85 backdrop-blur-md text-[10px] font-mono tracking-widest uppercase text-[#F5B800] group-hover:border-[#F5B800] group-hover:bg-[#F5B800]/20 transition-all shadow-lg flex items-center space-x-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800] animate-pulse" />
+                          <span>{doorsOpen ? 'CLICK TO CLOSE LIFT' : 'CLICK TO OPEN GC LIFT'}</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
