@@ -3,6 +3,8 @@ export { default as PortalHero } from './PortalHero';
 export { default as ElevatorLobby } from './ElevatorLobby';
 export { default as Floor01About } from './Floor01About';
 export { default as Floor02Method } from './Floor02Method';
+export { default as Floor03Archive } from './Floor03Archive';
+export { default as Floor04Vision } from './Floor04Vision';
 export { default as CenteredLogoScreen } from './CenteredLogoScreen';
 export { default as WelcomeScreen } from './WelcomeScreen';
 export { default as MemberLogin } from './MemberLogin';

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { config } from '../config';
 import Floor01About from './Floor01About';
 import Floor02Method from './Floor02Method';
+import Floor03Archive from './Floor03Archive';
+import Floor04Vision from './Floor04Vision';
 
 /**
  * Web Audio Synthesizer for soft luxury elevator acoustics
@@ -441,7 +443,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
       {/* 3. Main Center Stage */}
       <div className="relative z-20 h-[calc(100%-140px)] px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
         
-        {/* Main Stage Content: Floor 01 / Floor 02 / or Elevator Doors & Lobby View */}
+        {/* Main Stage Content: Floor 01 / Floor 02 / Floor 03 / Floor 04 / or Elevator Doors & Lobby View */}
         {currentFloor === '01' && doorsOpen && !isRideInProgress ? (
           /* Floor 01: ABOUT GOTHAM (Glowing Logo + Slow Typing Text) */
           <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
@@ -451,6 +453,16 @@ export default function ElevatorLobby({ onBackToPortal }) {
           /* Floor 02: THE METHOD (3 Glowing White Pillars with Gold Hover) */
           <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
             <Floor02Method />
+          </div>
+        ) : currentFloor === '03' && doorsOpen && !isRideInProgress ? (
+          /* Floor 03: PROJECT ARCHIVE (Project 001 + Status in Development + Learn More) */
+          <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
+            <Floor03Archive />
+          </div>
+        ) : currentFloor === '04' && doorsOpen && !isRideInProgress ? (
+          /* Floor 04: OUR VISION (From Students to Builders + Join The Movement) */
+          <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
+            <Floor04Vision />
           </div>
         ) : (
           /* Lobby View / In-Transit Elevator Ride with Sliding Doors & Logo */
