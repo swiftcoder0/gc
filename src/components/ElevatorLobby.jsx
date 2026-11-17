@@ -355,14 +355,15 @@ export default function ElevatorLobby({ onBackToPortal }) {
         <img
           src="/images/lobby-bg.jpg"
           alt="Gotham Elevator Lobby"
-          className="w-full h-full object-cover object-center pointer-events-none transition-transform duration-1000 ease-out"
+          className="w-full h-full object-cover object-center pointer-events-none transition-[transform,filter] duration-1200 ease-out"
           style={{
             transform:
               rideState === 'moving'
                 ? direction === 'up'
-                  ? 'scale(1.03) translateY(-14px)'
-                  : 'scale(1.03) translateY(14px)'
+                  ? 'scale(1.06) translateY(75px)'
+                  : 'scale(1.06) translateY(-75px)'
                 : 'scale(1.0) translateY(0px)',
+            filter: rideState === 'moving' ? 'blur(1.5px) brightness(0.85)' : 'blur(0px) brightness(1.0)',
           }}
         />
 
@@ -551,8 +552,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
               </div>
             </div>
 
-            {/* Center: Live Elevator Doors & Aperture Screen */}
-            <div className="relative flex items-center justify-center gap-4 sm:gap-6 z-20">
+            {/* Center: Live Elevator Doors & Aperture Screen (Slid slightly right to align with architectural doorway) */}
+            <div className="relative flex items-center justify-center z-20 translate-x-3 sm:translate-x-6 lg:translate-x-10">
               
               {/* Elevator Door Surround Box — Click to open/close GC lift when in lobby */}
               <div
@@ -727,53 +728,6 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 </div>
               </div>
 
-              {/* Up/Down Direction Arrows Beside the Doors */}
-              <div className="hidden sm:flex flex-col items-center justify-center space-y-3 p-2.5 rounded-xl border border-white/10 bg-[#0d0d0d]/90 backdrop-blur-md shadow-2xl">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-[#a1a1aa] writing-mode-vertical">
-                  CALL
-                </div>
-                
-                <button
-                  onClick={() => {
-                    const selectable = ['01', '02', '03', '04'];
-                    const curIdx = selectable.indexOf(currentFloor);
-                    if (curIdx < selectable.length - 1) {
-                      handleFloorJump(selectable[curIdx + 1]);
-                    }
-                  }}
-                  disabled={isRideInProgress || currentFloor === '04'}
-                  className={`w-9 h-9 rounded-lg border font-mono text-sm flex items-center justify-center transition-all duration-300 ${
-                    isRideInProgress || currentFloor === '04'
-                      ? 'border-white/5 bg-black/20 text-zinc-700 cursor-not-allowed'
-                      : 'border-white/15 bg-black/60 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:bg-[#F5B800]/15 hover:shadow-[0_0_15px_rgba(245,184,0,0.4)] cursor-pointer active:scale-95'
-                  }`}
-                  title="Call Elevator Up"
-                >
-                  ▲
-                </button>
-
-                <button
-                  onClick={() => {
-                    const selectable = ['01', '02', '03', '04'];
-                    const curIdx = selectable.indexOf(currentFloor);
-                    if (curIdx > 0) {
-                      handleFloorJump(selectable[curIdx - 1]);
-                    } else if (currentFloor !== 'lobby') {
-                      handleFloorJump('lobby');
-                    }
-                  }}
-                  disabled={isRideInProgress || currentFloor === 'lobby'}
-                  className={`w-9 h-9 rounded-lg border font-mono text-sm flex items-center justify-center transition-all duration-300 ${
-                    isRideInProgress || currentFloor === 'lobby'
-                      ? 'border-white/5 bg-black/20 text-zinc-700 cursor-not-allowed'
-                      : 'border-white/15 bg-black/60 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:bg-[#F5B800]/10 hover:shadow-[0_0_15px_rgba(245,184,0,0.4)] cursor-pointer active:scale-95'
-                  }`}
-                  title="Call Elevator Down"
-                >
-                  ▼
-                </button>
-              </div>
-
             </div>
           </>
         )}
@@ -852,8 +806,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
               </button>
             </div>
 
-            {/* Mobile Controls */}
-            <div className="flex sm:hidden items-center justify-center space-x-3 pt-2 w-full border-t border-white/10">
+            {/* Floor Step Direction Controls (▲ / ▼) */}
+            <div className="flex items-center justify-center space-x-3 pt-3 w-full border-t border-white/10">
               <button
                 onClick={() => {
                   const selectable = ['01', '02', '03', '04'];
@@ -861,7 +815,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
                   if (curIdx < selectable.length - 1) handleFloorJump(selectable[curIdx + 1]);
                 }}
                 disabled={isRideInProgress || currentFloor === '04'}
-                className="w-8 h-8 rounded-lg border border-white/15 bg-black/60 flex items-center justify-center text-xs text-[#a1a1aa] hover:border-[#F5B800] hover:text-[#F5B800] transition-all cursor-pointer"
+                className={`w-9 h-9 rounded-lg border font-mono text-sm flex items-center justify-center transition-all ${
+                  isRideInProgress || currentFloor === '04'
+                    ? 'border-white/5 bg-black/20 text-zinc-700 cursor-not-allowed'
+                    : 'border-white/15 bg-black/60 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:bg-[#F5B800]/15 hover:shadow-[0_0_12px_rgba(245,184,0,0.35)] cursor-pointer active:scale-95'
+                }`}
+                title="Next Floor Up"
               >
                 ▲
               </button>
@@ -873,7 +832,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
                   else if (currentFloor !== 'lobby') handleFloorJump('lobby');
                 }}
                 disabled={isRideInProgress || currentFloor === 'lobby'}
-                className="w-8 h-8 rounded-lg border border-white/15 bg-black/60 flex items-center justify-center text-xs text-[#a1a1aa] hover:border-[#F5B800] hover:text-[#F5B800] transition-all cursor-pointer"
+                className={`w-9 h-9 rounded-lg border font-mono text-sm flex items-center justify-center transition-all ${
+                  isRideInProgress || currentFloor === 'lobby'
+                    ? 'border-white/5 bg-black/20 text-zinc-700 cursor-not-allowed'
+                    : 'border-white/15 bg-black/60 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:bg-[#F5B800]/15 hover:shadow-[0_0_12px_rgba(245,184,0,0.35)] cursor-pointer active:scale-95'
+                }`}
+                title="Next Floor Down"
               >
                 ▼
               </button>
