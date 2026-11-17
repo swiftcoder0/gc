@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { gsap } from 'gsap';
 import { config } from '../config';
-import Floor01About from './Floor01About';
-import Floor02Method from './Floor02Method';
-import Floor03Archive from './Floor03Archive';
-import Floor04Vision from './Floor04Vision';
 
 /**
- * Web Audio Synthesizer for soft luxury elevator acoustics
+ * Web Audio Synthesizer for luxury elevator acoustics
  * OFF by default, only enabled when user clicks the Sound Toggle.
  */
 class ElevatorAudioEngine {
@@ -40,26 +36,26 @@ class ElevatorAudioEngine {
       const filter = this.ctx.createBiquadFilter();
 
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(180, now);
-      filter.frequency.exponentialRampToValueAtTime(70, now + 0.7);
+      filter.frequency.setValueAtTime(170, now);
+      filter.frequency.exponentialRampToValueAtTime(60, now + 0.8);
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(80, now);
-      osc.frequency.exponentialRampToValueAtTime(40, now + 0.7);
+      osc.frequency.setValueAtTime(75, now);
+      osc.frequency.exponentialRampToValueAtTime(32, now + 0.8);
 
-      gain.gain.setValueAtTime(0.04, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
 
       osc.connect(filter);
       filter.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.75);
+      osc.stop(now + 0.82);
     } catch (e) {}
   }
 
-  playHum(durationSec = 1.2) {
+  playHum(durationSec = 2.2) {
     if (!this.enabled || !this.ctx) return;
     try {
       const now = this.ctx.currentTime;
@@ -67,11 +63,11 @@ class ElevatorAudioEngine {
       const gain = this.ctx.createGain();
 
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(65, now);
+      osc.frequency.setValueAtTime(60, now);
 
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.035, now + 0.2);
-      gain.gain.setValueAtTime(0.035, now + durationSec - 0.2);
+      gain.gain.linearRampToValueAtTime(0.045, now + 0.35);
+      gain.gain.setValueAtTime(0.045, now + durationSec - 0.35);
       gain.gain.linearRampToValueAtTime(0.001, now + durationSec);
 
       osc.connect(gain);
@@ -86,141 +82,97 @@ class ElevatorAudioEngine {
     if (!this.enabled || !this.ctx) return;
     try {
       const now = this.ctx.currentTime;
-      // Soft luxury dual-tone chime (F#5 740Hz and C#6 1108Hz)
-      const freqs = [739.99, 1108.73];
+      const freqs = [739.99, 1108.73]; // F#5 & C#6 chime
       freqs.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
 
-        gain.gain.setValueAtTime(0.08, now + idx * 0.06);
-        gain.gain.exponentialRampToValueAtTime(0.0005, now + idx * 0.06 + 1.3);
+        gain.gain.setValueAtTime(0.08, now + idx * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0005, now + idx * 0.05 + 1.4);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
-        osc.start(now + idx * 0.06);
-        osc.stop(now + idx * 0.06 + 1.35);
+        osc.start(now + idx * 0.05);
+        osc.stop(now + idx * 0.05 + 1.45);
       });
     } catch (e) {}
   }
 }
 
 /**
- * ElevatorLobby — Screen 2: The Gotham Elevator
- * Governed strictly by SPEC (v2) and State Machine:
- * - States: 'lobby', 'closing', 'moving', 'opening', 'floor'
- * - Clicking a floor:
- *     1. Button fills gold
- *     2. Doors slide shut with logo meeting in the middle
- *     3. Panel counts to chosen floor with slight flicker & opposite animation directions for up/down
- *     4. Soft gold "ding" flash
- *     5. Doors slide open onto dark screen showing floor number
- * - Floor panel stays visible on every floor for continuous jumps
- * - Clicks during a ride are ignored
- * - Works with arrow keys (Up / Down) and Enter
- * - Optional soft elevator sound (OFF by default, toggled by user)
- * - Nav links map to floors:
- *     Projects = floor 03
- *     The Elevator = lobby
- *     About = floor 01
- *     Join Now = LinkedIn from config
+ * ElevatorLobby — ONE Continuous Scene Lift
+ * Strictly governed by SPEC (v2) and the Single Continuous Scene rules:
+ * - The lift car remains visible and in the SAME place for the entire sequence.
+ * - Never swaps to a different scene, image, or page layout.
+ *
+ * LAYERS (z-order):
+ * 1) SHAFT WALLS: Left and right vertical dark wall strips with thin horizontal gold floor lines
+ *    every 120px and SVG floor numbers (01-04) that scroll vertically during transit.
+ * 2) LIFT CAR: Centred, ~40% viewport width, 70% height, thick dark metal frame,
+ *    two sliding chrome doors, centered real logo (screen blend mode), thin vertical gold light strips.
+ * 3) FLOOR DISPLAY: Small gold digital LED display above doors showing current floor.
+ * 4) BUTTON PANEL: Slim panel on right of car frame with buttons 04, 03, 02, 01 only.
+ * 5) TOP BAR: Logo and Join Now. No headline, no cards, no chips.
+ *
+ * STATE MACHINE (GSAP timeline per click, reversible):
+ * IDLE -> CLOSING (0.8s) -> MOVING (~2.2s) -> ARRIVING (0.3s) -> OPENING (1s) -> REVEAL (1.5s) -> CONTENT -> RETURN -> IDLE.
  */
 export default function ElevatorLobby({ onBackToPortal }) {
-  const { openMemberLogin } = useAuth();
-
-  // Audio Engine Instance
   const audio = useMemo(() => new ElevatorAudioEngine(), []);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // Initial floor detection from URL hash (e.g. #floor-03, #floor-04)
-  const getInitialFloor = () => {
+  // prefers-reduced-motion
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const hash = window.location.hash.toLowerCase();
-      if (hash.includes('04') || hash.includes('vision')) return '04';
-      if (hash.includes('03') || hash.includes('project') || hash.includes('archive')) return '03';
-      if (hash.includes('02') || hash.includes('method')) return '02';
-      if (hash.includes('01') || hash.includes('about')) return '01';
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setReducedMotion(mq.matches);
+      const h = (e) => setReducedMotion(e.matches);
+      mq.addEventListener('change', h);
+      return () => mq.removeEventListener('change', h);
     }
-    return 'lobby';
-  };
+  }, []);
 
-  const initialFloor = getInitialFloor();
-
-  // Simple State Machine: 'lobby' | 'closing' | 'moving' | 'opening' | 'floor'
-  const [rideState, setRideState] = useState(() => (initialFloor === 'lobby' ? 'lobby' : 'floor'));
-
-  // Floor states: 'lobby' | '01' | '02' | '03' | '04'
-  const [currentFloor, setCurrentFloor] = useState(initialFloor);
-  const [targetFloor, setTargetFloor] = useState(initialFloor);
-  const [displayFloor, setDisplayFloor] = useState(() => (initialFloor === 'lobby' ? '00' : initialFloor));
-  const [direction, setDirection] = useState(null); // 'up' | 'down' | null
-  
-  // Doors start CLOSED in the lobby with the GC seal meeting in the middle; only open when clicked!
-  const [doorsOpen, setDoorsOpen] = useState(() => (initialFloor !== 'lobby'));
-  const [isFlickering, setIsFlickering] = useState(false);
-  const [dingFlash, setDingFlash] = useState(false);
+  // Floor state: '01' | '02' | '03' | '04'
+  const [currentFloor, setCurrentFloor] = useState('01');
+  const [targetFloor, setTargetFloor] = useState('01');
+  const [displayFloor, setDisplayFloor] = useState('01');
   const [highlightedFloor, setHighlightedFloor] = useState('01');
 
-  // Reference floors list
-  const floors = [
-    {
-      id: '04',
-      name: 'OUR VISION',
-      eyebrow: 'OUR VISION',
-      headline: 'FROM STUDENTS TO BUILDERS. FROM BUILDERS TO FOUNDERS.',
-      description: 'We want to create an ecosystem where students don\'t have to wait for opportunities to build something meaningful.',
-      badge: 'FOUNDRY GOAL',
-      actionText: 'Join The Movement →',
-      actionUrl: config.socials.linkedin,
-    },
-    {
-      id: '03',
-      name: 'PROJECT ARCHIVE',
-      eyebrow: 'PROJECT ARCHIVE',
-      headline: 'PROJECT 001',
-      description: 'Our first project is in the works. Stay tuned.',
-      badge: 'STATUS : IN DEVELOPMENT',
-      actionText: 'Learn More →',
-      actionPanel: 'Status: in development. Details will be shared when we launch.',
-    },
-    {
-      id: '02',
-      name: 'THE METHOD',
-      eyebrow: 'THE METHOD',
-      headline: 'BUILD • IDENTIFY • CREATE',
-      description: 'We don\'t just teach entrepreneurship. We build real things.',
-      badge: 'FOUNDRY METHODOLOGY',
-      steps: [
-        { label: '01. BUILD', text: 'We collaborate as students and build projects from scratch.' },
-        { label: '02. IDENTIFY', text: 'After launching and validating projects, we identify people with the potential to become founders.' },
-        { label: '03. CREATE', text: 'We work with selected founders to turn successful projects into independent startups through equity partnerships.' },
-      ],
-    },
-    {
-      id: '01',
-      name: 'ABOUT GOTHAM',
-      eyebrow: 'ABOUT GOTHAM',
-      headline: 'STUDENT-LED VENTURE STUDIO FOUNDRY',
-      description: 'Gotham Collage is a student-led venture studio where ambitious students come together to build real-world projects. We believe in learning by building and creating things that solve real problems.',
-      badge: 'ORIGIN & MISSION',
-    },
-  ];
+  // State Machine tracker
+  const [stateName, setStateName] = useState('IDLE'); // 'IDLE' | 'CLOSING' | 'MOVING' | 'ARRIVING' | 'OPENING' | 'REVEAL' | 'CONTENT' | 'RETURN'
+  const [isBusy, setIsBusy] = useState(false);
+  const [doorsOpen, setDoorsOpen] = useState(false);
+  const [activeFloorContent, setActiveFloorContent] = useState('01');
+  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
+  const [selectedPillar, setSelectedPillar] = useState('BUILD');
 
-  // Full sequence ordering: lobby is index 0
-  const floorOrder = ['lobby', '01', '02', '03', '04'];
+  // DOM Refs for GSAP
+  const sceneRootRef = useRef(null);
+  const shaftLeftTrackRef = useRef(null);
+  const shaftRightTrackRef = useRef(null);
+  const carWrapperRef = useRef(null);
+  const leftDoorRef = useRef(null);
+  const rightDoorRef = useRef(null);
+  const leftGoldStripRef = useRef(null);
+  const rightGoldStripRef = useRef(null);
+  const dingFlashRef = useRef(null);
+  const doorwayGlowRef = useRef(null);
+  const contentPortalRef = useRef(null);
+  const specksContainerRef = useRef(null);
 
-  // Guard: clicks during a ride are ignored
-  const isRideInProgress = rideState === 'closing' || rideState === 'moving' || rideState === 'opening';
+  // Shaft scroll current position
+  const shaftYRef = useRef(0);
 
   // Toggle Sound safely
   const toggleSound = () => {
     if (!soundEnabled) {
       audio.enable();
       setSoundEnabled(true);
-      // Play a quick test confirmation chime
       setTimeout(() => audio.playDing(), 150);
     } else {
       audio.disable();
@@ -228,624 +180,866 @@ export default function ElevatorLobby({ onBackToPortal }) {
     }
   };
 
-  // Toggle GC elevator doors directly when clicked in the lobby
-  const handleToggleLiftDoors = () => {
-    if (isRideInProgress || currentFloor !== 'lobby') return;
-    setDoorsOpen((prev) => {
-      audio.playDoorSlide();
-      return !prev;
-    });
-  };
+  // Generate 4-floor buttons: 04, 03, 02, 01 only
+  const floorButtons = ['04', '03', '02', '01'];
 
-  // Helper: jump between floors
-  const handleFloorJump = (destination) => {
-    if (isRideInProgress) return; // Clicks during ride ignored
-    if (destination === currentFloor) return; // Already on this floor
+  // Dust specks for moving state
+  const dustSpecks = useMemo(() => {
+    return Array.from({ length: 14 }).map((_, i) => ({
+      id: i,
+      left: `${(15 + (i * 5.8) + (i % 3) * 4).toFixed(1)}%`,
+      top: `${(10 + (i * 6.5)).toFixed(1)}%`,
+      size: `${(i % 3) * 1.2 + 1.5}px`,
+      opacity: 0.2 + (i % 4) * 0.12,
+    }));
+  }, []);
 
-    const curIdx = floorOrder.indexOf(currentFloor);
-    const tarIdx = floorOrder.indexOf(destination);
-    const dir = tarIdx > curIdx ? 'up' : 'down';
+  // --- CORE GSAP TIMELINE ENGINE ---
+  const launchFloorTransition = (destFloor) => {
+    if (isBusy) return;
+    if (destFloor === currentFloor && stateName === 'CONTENT') return;
 
-    setDirection(dir);
-    setTargetFloor(destination);
-    setHighlightedFloor(destination === 'lobby' ? '01' : destination);
+    setIsBusy(true);
+    setTargetFloor(destFloor);
+    setHighlightedFloor(destFloor);
 
-    const startTransitMotion = () => {
-      setRideState('moving');
-      audio.playHum(1.3);
+    const fromNum = parseInt(currentFloor, 10);
+    const toNum = parseInt(destFloor, 10);
+    const isGoingUp = toNum > fromNum;
+    const floorDistance = Math.abs(toNum - fromNum) || 1;
 
-      // Digital counting flicker sequence
-      const steps = [];
-      if (dir === 'up') {
-        for (let i = curIdx; i <= tarIdx; i++) {
-          steps.push(floorOrder[i] === 'lobby' ? '00' : floorOrder[i]);
-        }
-      } else {
-        for (let i = curIdx; i >= tarIdx; i--) {
-          steps.push(floorOrder[i] === 'lobby' ? '00' : floorOrder[i]);
-        }
-      }
-
-      // Step through intermediate floors
-      const stepDuration = 1100 / (steps.length || 1);
-      steps.forEach((stepVal, idx) => {
-        setTimeout(() => {
-          setDisplayFloor(stepVal);
-          setIsFlickering(true);
-          setTimeout(() => setIsFlickering(false), stepDuration * 0.4);
-        }, idx * stepDuration);
-      });
-
-      // 3. STATE: 'opening' (after counting ends)
-      setTimeout(() => {
-        setRideState('opening');
-        setDingFlash(true);
-        audio.playDing();
-        setDisplayFloor(destination === 'lobby' ? '00' : destination);
-
-        // Doors slide open onto destination floor
-        setTimeout(() => {
-          setDoorsOpen(true);
-          audio.playDoorSlide();
-        }, 200);
-
-        // 4. STATE: 'floor' or 'lobby' (settled)
-        setTimeout(() => {
-          setCurrentFloor(destination);
-          setRideState(destination === 'lobby' ? 'lobby' : 'floor');
-          setDingFlash(false);
-          setDirection(null);
-        }, 1000);
-      }, 1300);
-    };
-
-    // If doors are open, slide them shut first with logo meeting in the middle
-    if (doorsOpen) {
-      setRideState('closing');
-      setDoorsOpen(false);
-      audio.playDoorSlide();
-      setTimeout(startTransitMotion, 850);
+    // Step sequence for digital counter
+    const counterSequence = [];
+    if (toNum >= fromNum) {
+      for (let i = fromNum; i <= toNum; i++) counterSequence.push(`0${i}`);
     } else {
-      // Doors already closed in lobby: start moving immediately!
-      setRideState('moving');
-      startTransitMotion();
+      for (let i = fromNum; i >= toNum; i--) counterSequence.push(`0${i}`);
     }
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        setCurrentFloor(destFloor);
+        setActiveFloorContent(destFloor);
+        setStateName('CONTENT');
+        setIsBusy(false);
+      },
+    });
+
+    // If currently in CONTENT, do RETURN first (shrink content back into doorway, brighten lift, close doors)
+    if (stateName === 'CONTENT') {
+      tl.call(() => setStateName('RETURN'))
+        .to(contentPortalRef.current, {
+          scale: 0.2,
+          opacity: 0,
+          pointerEvents: 'none',
+          duration: 0.8,
+          ease: 'power3.in',
+        })
+        .to([carWrapperRef.current, shaftLeftTrackRef.current?.parentElement, shaftRightTrackRef.current?.parentElement], {
+          opacity: 1.0,
+          filter: 'brightness(1.0)',
+          duration: 0.8,
+          ease: 'power2.out',
+        }, '<')
+        .to([leftDoorRef.current, rightDoorRef.current], {
+          x: '0%',
+          duration: 0.7,
+          ease: 'power2.inOut',
+          onStart: () => audio.playDoorSlide(),
+        });
+    }
+
+    // 1. CLOSING (0.8s) — If doors are open, slide shut; logo meets in middle
+    tl.call(() => {
+      setStateName('CLOSING');
+      setDoorsOpen(false);
+    });
+
+    tl.to([leftDoorRef.current, rightDoorRef.current], {
+      x: '0%',
+      duration: 0.8,
+      ease: 'power2.inOut',
+      onStart: () => audio.playDoorSlide(),
+    });
+
+    // 2. MOVING (~2.2s) — Car stays centered, shaft walls scroll vertically
+    tl.call(() => {
+      setStateName('MOVING');
+      audio.playHum(2.2);
+    });
+
+    // Moving duration
+    const moveDuration = reducedMotion ? 0.8 : 2.2;
+    const travelDistancePx = floorDistance * 480;
+    const deltaY = isGoingUp ? travelDistancePx : -travelDistancePx;
+    const newShaftY = shaftYRef.current + deltaY;
+    shaftYRef.current = newShaftY;
+
+    if (!reducedMotion) {
+      // Shaft scroll: ease in over 0.5s, constant, ease out over 0.5s (power2.inOut)
+      tl.to([shaftLeftTrackRef.current, shaftRightTrackRef.current], {
+        y: newShaftY,
+        duration: moveDuration,
+        ease: 'power2.inOut',
+      }, '+=0.05');
+
+      // Car vibration by 1.5px
+      tl.to(carWrapperRef.current, {
+        y: '+=1.5',
+        x: '+=0.8',
+        repeat: 16,
+        yoyo: true,
+        duration: 0.07,
+        ease: 'sine.inOut',
+      }, '<');
+
+      // Gold strips flickering
+      tl.to([leftGoldStripRef.current, rightGoldStripRef.current], {
+        opacity: 0.35,
+        repeat: 14,
+        yoyo: true,
+        duration: 0.08,
+        ease: 'power1.inOut',
+      }, '<');
+
+      // Faint dust specks drift past
+      if (specksContainerRef.current) {
+        tl.fromTo(specksContainerRef.current, {
+          y: isGoingUp ? -60 : 60,
+          opacity: 0,
+        }, {
+          y: isGoingUp ? 120 : -120,
+          opacity: 0.8,
+          duration: moveDuration,
+          ease: 'power1.inOut',
+        }, '<');
+      }
+    } else {
+      // Reduced motion: smooth fade sequence
+      tl.to([shaftLeftTrackRef.current, shaftRightTrackRef.current], {
+        opacity: 0.4,
+        duration: 0.4,
+        yoyo: true,
+        repeat: 1,
+      }, '+=0.05');
+    }
+
+    // Intermediate floor counter updates during the move
+    const stepDuration = moveDuration / (counterSequence.length || 1);
+    counterSequence.forEach((val, idx) => {
+      tl.call(() => {
+        setDisplayFloor(val);
+      }, null, `<+=${(idx * stepDuration).toFixed(2)}`);
+    });
+
+    // 3. ARRIVING (0.3s) — Walls stop, gold "ding" flash
+    tl.call(() => {
+      setStateName('ARRIVING');
+      setDisplayFloor(destFloor);
+      audio.playDing();
+      if (carWrapperRef.current) {
+        gsap.set(carWrapperRef.current, { x: 0, y: 0 });
+      }
+      if (leftGoldStripRef.current && rightGoldStripRef.current) {
+        gsap.set([leftGoldStripRef.current, rightGoldStripRef.current], { opacity: 1.0 });
+      }
+    });
+
+    // Ding Flash
+    tl.fromTo(dingFlashRef.current, {
+      opacity: 0,
+    }, {
+      opacity: 0.7,
+      duration: 0.15,
+      yoyo: true,
+      repeat: 1,
+      ease: 'power2.out',
+    });
+
+    // 4. OPENING (1.0s) — Doors slide apart, warm light spills out
+    tl.call(() => {
+      setStateName('OPENING');
+      setDoorsOpen(true);
+      setActiveFloorContent(destFloor);
+    });
+
+    tl.to(leftDoorRef.current, {
+      x: '-100%',
+      duration: 1.0,
+      ease: 'power2.inOut',
+      onStart: () => audio.playDoorSlide(),
+    })
+    .to(rightDoorRef.current, {
+      x: '100%',
+      duration: 1.0,
+      ease: 'power2.inOut',
+    }, '<')
+    .to(doorwayGlowRef.current, {
+      opacity: 0.85,
+      duration: 0.8,
+      ease: 'power2.out',
+    }, '<');
+
+    // 5. REVEAL (1.5s) — Floor content renders inside doorway & scales up to fill the screen
+    tl.call(() => {
+      setStateName('REVEAL');
+    });
+
+    tl.fromTo(contentPortalRef.current, {
+      scale: 0.22,
+      opacity: 0,
+      pointerEvents: 'none',
+    }, {
+      scale: 1.0,
+      opacity: 1.0,
+      pointerEvents: 'auto',
+      duration: 1.5,
+      ease: 'power3.out',
+      transformOrigin: 'center center',
+    })
+    // Lift car and shaft dim to 15% and stay faintly visible behind
+    .to([carWrapperRef.current, shaftLeftTrackRef.current?.parentElement, shaftRightTrackRef.current?.parentElement], {
+      opacity: 0.15,
+      filter: 'brightness(0.28)',
+      duration: 1.5,
+      ease: 'power2.out',
+    }, '<');
   };
 
-  // Keyboard navigation: ArrowUp, ArrowDown, Enter
+  // Return to Lift button clicked from content screen
+  const handleReturnToLift = () => {
+    if (isBusy) return;
+    setIsBusy(true);
+    setStateName('RETURN');
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        setStateName('IDLE');
+        setDoorsOpen(false);
+        setIsBusy(false);
+      },
+    });
+
+    // REVEAL in reverse: content shrinks back into doorway
+    tl.to(contentPortalRef.current, {
+      scale: 0.22,
+      opacity: 0,
+      pointerEvents: 'none',
+      duration: 1.0,
+      ease: 'power3.in',
+    })
+    // Lift car and shaft brighten back to 100%
+    .to([carWrapperRef.current, shaftLeftTrackRef.current?.parentElement, shaftRightTrackRef.current?.parentElement], {
+      opacity: 1.0,
+      filter: 'brightness(1.0)',
+      duration: 1.0,
+      ease: 'power2.out',
+    }, '<')
+    // Doors slide shut, logo meets in the middle (0.8s)
+    .to([leftDoorRef.current, rightDoorRef.current], {
+      x: '0%',
+      duration: 0.8,
+      ease: 'power2.inOut',
+      onStart: () => audio.playDoorSlide(),
+    })
+    .to(doorwayGlowRef.current, {
+      opacity: 0,
+      duration: 0.6,
+      ease: 'power2.out',
+    }, '<');
+  };
+
+  // Keyboard Navigation: ArrowUp, ArrowDown, Enter
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isRideInProgress) return;
+      if (isBusy) return;
 
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        const selectable = ['01', '02', '03', '04'];
-        const curIdx = selectable.indexOf(highlightedFloor);
-        if (curIdx < selectable.length - 1) {
-          setHighlightedFloor(selectable[curIdx + 1]);
+        const curIdx = floorButtons.indexOf(highlightedFloor);
+        if (curIdx > 0) {
+          setHighlightedFloor(floorButtons[curIdx - 1]);
         }
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        const selectable = ['01', '02', '03', '04'];
-        const curIdx = selectable.indexOf(highlightedFloor);
-        if (curIdx > 0) {
-          setHighlightedFloor(selectable[curIdx - 1]);
+        const curIdx = floorButtons.indexOf(highlightedFloor);
+        if (curIdx < floorButtons.length - 1) {
+          setHighlightedFloor(floorButtons[curIdx + 1]);
         }
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (highlightedFloor && highlightedFloor !== currentFloor) {
-          handleFloorJump(highlightedFloor);
+        if (highlightedFloor) {
+          launchFloorTransition(highlightedFloor);
         }
+      } else if (e.key === 'Escape' && stateName === 'CONTENT') {
+        handleReturnToLift();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRideInProgress, highlightedFloor, currentFloor]);
-
-  // Readout helpers
-  const currentFloorData = floors.find((f) => f.id === currentFloor);
-  const activeLevelDisplay = currentFloor === 'lobby' ? '00' : currentFloor;
+  }, [isBusy, highlightedFloor, stateName, currentFloor]);
 
   return (
-    <div className="relative w-full h-[100dvh] min-h-[700px] bg-[#0b0b0b] text-[#e8e8e6] overflow-hidden select-none font-sans">
-      
-      {/* 1. Fullscreen Background: /public/images/lobby-bg.jpg */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src="/images/lobby-bg.jpg"
-          alt="Gotham Elevator Lobby"
-          className="w-full h-full object-cover object-center pointer-events-none transition-[transform,filter] duration-1200 ease-out"
-          style={{
-            transform:
-              rideState === 'moving'
-                ? direction === 'up'
-                  ? 'scale(1.06) translateY(75px)'
-                  : 'scale(1.06) translateY(-75px)'
-                : 'scale(1.0) translateY(0px)',
-            filter: rideState === 'moving' ? 'blur(1.5px) brightness(0.85)' : 'blur(0px) brightness(1.0)',
-          }}
-        />
+    <div
+      ref={sceneRootRef}
+      className="relative w-full h-[100dvh] min-h-[640px] bg-[#070709] text-[#e8e8e6] overflow-hidden select-none font-sans"
+    >
 
-        {/* Ambient Dark Overlays — Shrouds background secondary opening so only the central GC lift exists */}
-        <div className="absolute inset-0 bg-[#0b0b0b]/40 pointer-events-none" />
-        <div className="absolute inset-y-0 left-0 w-full md:w-5/12 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0b]/85 to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-full md:w-7/12 bg-gradient-to-l from-[#0b0b0b] via-[#0b0b0b]/95 via-50% to-transparent pointer-events-none" />
-        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#0b0b0b]/95 via-[#0b0b0b]/60 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
-      </div>
-
-      {/* 2. Top Navigation Bar — Nav links map to floors */}
-      <header className="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-6 flex items-center justify-between">
-        {/* Left: Logo + GOTHAM COLLAGE (clicking returns to lobby) */}
-        <button
-          onClick={() => handleFloorJump('lobby')}
-          disabled={isRideInProgress}
-          className="flex items-center space-x-3 group cursor-pointer focus:outline-none"
-        >
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/70 border border-white/20 p-0.5 flex items-center justify-center group-hover:border-[#F5B800]/50 transition-colors shadow-lg">
+      {/* ==============================================================
+          LAYER 5: TOP BAR (Logo + Join Now only, nothing else)
+      ============================================================== */}
+      <header className="absolute top-0 inset-x-0 z-50 h-16 px-6 sm:px-10 flex items-center justify-between border-b border-white/5 bg-[#070709]/75 backdrop-blur-md">
+        {/* Left: Real Logo + GOTHAM COLLAGE */}
+        <div className="flex items-center space-x-3">
+          <div className="w-7 h-7 rounded-md overflow-hidden bg-black/80 border border-white/15 p-0.5 flex items-center justify-center shadow-md">
             <img src="/images/gc-logo.png" alt="GC" className="w-full h-full object-contain" />
           </div>
-          <span className="font-display text-xs sm:text-sm font-extrabold uppercase tracking-[0.22em] text-[#e8e8e6] group-hover:text-white transition-colors">
+          <span className="font-display text-xs sm:text-sm font-extrabold uppercase tracking-[0.25em] text-[#e8e8e6]">
             GOTHAM COLLAGE
           </span>
-        </button>
+        </div>
 
-        {/* Centre: Nav Links mapped to floors */}
-        <nav className="hidden md:flex items-center space-x-8 text-xs font-mono uppercase tracking-widest text-[#a1a1aa]">
-          {/* Projects = floor 03 */}
-          <button
-            onClick={() => handleFloorJump('03')}
-            disabled={isRideInProgress}
-            className={`transition-colors duration-200 cursor-pointer ${
-              currentFloor === '03' ? 'text-[#F5B800] font-semibold' : 'hover:text-white'
-            }`}
-          >
-            Projects
-          </button>
-
-          {/* The Elevator = lobby */}
-          <button
-            onClick={() => handleFloorJump('lobby')}
-            disabled={isRideInProgress}
-            className={`transition-colors duration-200 cursor-pointer ${
-              currentFloor === 'lobby' ? 'text-[#F5B800] font-semibold' : 'hover:text-white'
-            }`}
-          >
-            The Elevator
-          </button>
-
-          {/* About = floor 01 */}
-          <button
-            onClick={() => handleFloorJump('01')}
-            disabled={isRideInProgress}
-            className={`transition-colors duration-200 cursor-pointer ${
-              currentFloor === '01' ? 'text-[#F5B800] font-semibold' : 'hover:text-white'
-            }`}
-          >
-            About
-          </button>
-
-          {/* Join Now = LinkedIn from config */}
-          <a
-            href={config.socials.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors duration-200 hover:text-[#F5B800] text-zinc-300 font-semibold"
-          >
-            Join Now
-          </a>
-        </nav>
-
-        {/* Right: Sound Toggle + Portal Return + Member Login */}
-        <div className="flex items-center space-x-3">
-          {/* Sound Toggle (OFF by default, only starts after user clicks) */}
+        {/* Right: Sound Toggle + Join Now */}
+        <div className="flex items-center space-x-4">
           <button
             onClick={toggleSound}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-wider border transition-all duration-300 cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
               soundEnabled
-                ? 'border-[#F5B800] text-[#F5B800] bg-[#F5B800]/15 shadow-[0_0_12px_rgba(245,184,0,0.35)]'
-                : 'border-white/20 text-[#8a8a88] bg-black/60 hover:text-white hover:border-white/40'
+                ? 'border-[#F5B800] text-[#F5B800] bg-[#F5B800]/15 shadow-[0_0_10px_rgba(245,184,0,0.3)]'
+                : 'border-white/15 text-[#8a8a88] bg-black/50 hover:text-white'
             }`}
-            title="Toggle Soft Elevator Audio"
           >
-            <span>{soundEnabled ? '🔊 AUDIO ON' : '🔇 AUDIO OFF'}</span>
+            {soundEnabled ? '🔊 AUDIO ON' : '🔇 AUDIO OFF'}
           </button>
 
           {onBackToPortal && (
             <button
               onClick={onBackToPortal}
-              disabled={isRideInProgress}
-              className="px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider border border-white/20 text-[#a1a1aa] hover:text-white hover:border-white/50 bg-black/60 transition-all cursor-pointer mr-1"
+              disabled={isBusy}
+              className="text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white transition-colors cursor-pointer mr-2"
             >
               ← Portal
             </button>
           )}
 
-          <button
-            onClick={openMemberLogin}
-            disabled={isRideInProgress}
-            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border border-[#F5B800] text-[#F5B800] bg-[#0b0b0b]/70 hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_15px_rgba(245,184,0,0.3)] cursor-pointer active:scale-95"
+          <a
+            href={config.socials.linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all border border-[#F5B800] text-[#F5B800] hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_12px_rgba(245,184,0,0.3)] cursor-pointer"
           >
-            Enter Portal
-          </button>
+            Join Now
+          </a>
         </div>
       </header>
 
-      {/* 3. Main Center Stage */}
-      <div className="relative z-20 h-[calc(100%-140px)] px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+
+      {/* ==============================================================
+          LAYER 1: SHAFT WALLS (Left and Right of the Lift Car)
+          Filled with thin horizontal gold floor lines every 120px and
+          SVG floor numbers (01-04) that scroll vertically.
+      ============================================================== */}
+      <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden transition-[opacity,filter] duration-700">
         
-        {/* Main Stage Content: Floor 01 / Floor 02 / Floor 03 / Floor 04 / or Elevator Doors & Lobby View */}
-        {currentFloor === '01' && doorsOpen && !isRideInProgress ? (
-          /* Floor 01: ABOUT GOTHAM (Glowing Logo + Slow Typing Text) */
-          <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
-            <Floor01About />
-          </div>
-        ) : currentFloor === '02' && doorsOpen && !isRideInProgress ? (
-          /* Floor 02: THE METHOD (3 Glowing White Pillars with Gold Hover) */
-          <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
-            <Floor02Method />
-          </div>
-        ) : currentFloor === '03' && doorsOpen && !isRideInProgress ? (
-          /* Floor 03: PROJECT ARCHIVE (Project 001 + Status in Development + Learn More) */
-          <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
-            <Floor03Archive />
-          </div>
-        ) : currentFloor === '04' && doorsOpen && !isRideInProgress ? (
-          /* Floor 04: OUR VISION (From Students to Builders + Join The Movement) */
-          <div className="w-full lg:w-3/4 h-full flex items-center justify-center animate-fade-in overflow-y-auto">
-            <Floor04Vision />
-          </div>
-        ) : (
-          /* Lobby View / In-Transit Elevator Ride with Sliding Doors & Logo */
-          <>
-            {/* Left Side: Elevator Title & Story Sub */}
-            <div className="w-full lg:w-1/3 flex flex-col justify-center space-y-4 sm:space-y-6 text-left animate-fade-in z-20">
-              <div className="inline-flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
-                <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
-                  {currentFloor === 'lobby' ? 'THE ELEVATOR' : `LEVEL ${currentFloor}`}
-                </span>
-              </div>
+        {/* Left Shaft Wall Strip */}
+        <div
+          className="absolute left-0 top-0 bottom-0 overflow-hidden border-r border-[#1a1a24] bg-[#08080b]"
+          style={{ width: 'calc((100vw - min(40vw, 540px)) / 2)' }}
+        >
+          {/* Scrolling Vertical Track */}
+          <div
+            ref={shaftLeftTrackRef}
+            className="absolute inset-x-0 w-full will-change-transform"
+            style={{ top: '-1800px', height: '6000px' }}
+          >
+            {/* Repeating Pattern of 120px Gold Girder Lines & SVG Floor Numbers */}
+            {Array.from({ length: 48 }).map((_, idx) => {
+              const floorIdx = (idx % 4) + 1;
+              const isMajorFloor = idx % 4 === 0;
 
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-white leading-[1.1]">
-                {currentFloor === 'lobby' ? (
-                  <>
-                    CHOOSE YOUR
-                    <br />
-                    <span className="text-white drop-shadow-[0_2px_15px_rgba(255,255,255,0.2)]">
-                      FLOOR.
+              return (
+                <div
+                  key={`left-shaft-${idx}`}
+                  className="w-full h-[120px] relative border-b border-[#F5B800]/25 flex items-end px-4 sm:px-8 pb-2"
+                >
+                  {/* Vertical Guide Cable */}
+                  <div className="absolute top-0 bottom-0 right-10 w-[1px] bg-white/5" />
+                  <div className="absolute top-0 bottom-0 left-12 w-[1px] bg-white/5" />
+
+                  {/* SVG Floor Label every 4th line (480px) */}
+                  {isMajorFloor && (
+                    <div className="flex items-center space-x-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#F5B800]/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800]/70" />
+                      <span>SHAFT LVL 0{floorIdx}</span>
+                    </div>
+                  )}
+                  {!isMajorFloor && (
+                    <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">
+                      SECT {(idx * 120).toString().padStart(4, '0')}
                     </span>
-                  </>
-                ) : (
-                  currentFloorData?.name || 'TRANSIT'
-                )}
-              </h1>
-
-              <p className="font-sans text-sm sm:text-base text-[#a1a1aa] leading-relaxed max-w-sm">
-                {currentFloor === 'lobby'
-                  ? 'Explore the depths of Gotham.'
-                  : currentFloorData?.description}
-              </p>
-
-              <div className="pt-2">
-                <div className="inline-flex items-center space-x-3 px-3.5 py-2 rounded-xl border border-white/10 bg-black/70 backdrop-blur-md text-[11px] font-mono text-[#a1a1aa]">
-                  <span>NAVIGATE:</span>
-                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold">▲</span>
-                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold">▼</span>
-                  <span className="px-2 py-0.5 rounded bg-[#F5B800]/20 text-[#F5B800] font-bold">ENTER</span>
+                  )}
                 </div>
-              </div>
+              );
+            })}
+          </div>
+        </div>
 
-              {/* Ride State Status Pill */}
-              <div className="pt-1">
-                <div className="inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-full border border-white/10 bg-black/60 backdrop-blur-md">
-                  <span className={`w-1.5 h-1.5 rounded-full ${isRideInProgress ? 'bg-[#F5B800] animate-ping' : 'bg-emerald-400'}`} />
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#a1a1aa]">
-                    {rideState === 'lobby' && 'LOBBY READY'}
-                    {rideState === 'closing' && 'DOORS CLOSING...'}
-                    {rideState === 'moving' && `TRANSIT ${direction?.toUpperCase()}...`}
-                    {rideState === 'opening' && 'ARRIVED'}
-                    {rideState === 'floor' && `FLOOR ${currentFloor} OPEN`}
-                  </span>
-                </div>
-              </div>
-            </div>
+        {/* Right Shaft Wall Strip */}
+        <div
+          className="absolute right-0 top-0 bottom-0 overflow-hidden border-l border-[#1a1a24] bg-[#08080b]"
+          style={{ width: 'calc((100vw - min(40vw, 540px)) / 2)' }}
+        >
+          {/* Scrolling Vertical Track */}
+          <div
+            ref={shaftRightTrackRef}
+            className="absolute inset-x-0 w-full will-change-transform"
+            style={{ top: '-1800px', height: '6000px' }}
+          >
+            {/* Repeating Pattern of 120px Gold Girder Lines & SVG Floor Numbers */}
+            {Array.from({ length: 48 }).map((_, idx) => {
+              const floorIdx = (idx % 4) + 1;
+              const isMajorFloor = idx % 4 === 0;
 
-            {/* Center: Live Elevator Doors & Aperture Screen (Slid slightly right to align with architectural doorway) */}
-            <div className="relative flex items-center justify-center z-20 translate-x-3 sm:translate-x-6 lg:translate-x-10">
-              
-              {/* Elevator Door Surround Box — Click to open/close GC lift when in lobby */}
-              <div
-                onClick={handleToggleLiftDoors}
-                className={`relative w-[280px] sm:w-[350px] md:w-[390px] lg:w-[420px] aspect-[3/4.2] max-h-[540px] flex items-center justify-center group ${
-                  currentFloor === 'lobby' && !isRideInProgress ? 'cursor-pointer' : ''
-                }`}
-                title={currentFloor === 'lobby' ? (doorsOpen ? 'Click to close GC lift' : 'Click to open GC lift') : ''}
-              >
-                <div className="relative w-full h-full rounded-2xl overflow-hidden border border-[#2d2d2d] group-hover:border-[#F5B800]/50 bg-[#0a0a0a] shadow-[0_15px_50px_rgba(0,0,0,0.95)] flex items-center justify-center p-3 sm:p-3.5 transition-colors duration-300">
-                  
-                  {/* Header: Up/Down Direction Arrows + Digital Floor Display */}
-                  <div className="absolute top-3.5 inset-x-0 flex items-center justify-between px-6 z-25 pointer-events-none">
-                    <div className="flex items-center space-x-2 bg-black/90 px-2.5 py-1 rounded border border-white/10 font-mono text-[11px]">
-                      <span className={`${direction === 'up' || (!direction && currentFloor !== '04') ? 'text-[#F5B800] animate-pulse' : 'text-zinc-700'}`}>▲</span>
-                      <span className={`${direction === 'down' || (!direction && currentFloor !== '01' && currentFloor !== 'lobby') ? 'text-[#F5B800] animate-pulse' : 'text-zinc-700'}`}>▼</span>
+              return (
+                <div
+                  key={`right-shaft-${idx}`}
+                  className="w-full h-[120px] relative border-b border-[#F5B800]/25 flex items-end justify-end px-4 sm:px-8 pb-2"
+                >
+                  {/* Vertical Guide Cable */}
+                  <div className="absolute top-0 bottom-0 left-10 w-[1px] bg-white/5" />
+                  <div className="absolute top-0 bottom-0 right-12 w-[1px] bg-white/5" />
+
+                  {/* SVG Floor Label every 4th line (480px) */}
+                  {isMajorFloor && (
+                    <div className="flex items-center space-x-2 text-[11px] font-mono uppercase tracking-[0.25em] text-[#F5B800]/60">
+                      <span>SHAFT LVL 0{floorIdx}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800]/70" />
                     </div>
-
-                    {/* Digital Floor Indicator (Counts with slight flicker, pulses gold on ding) */}
-                    <div
-                      className={`font-mono text-xs tracking-widest uppercase bg-black/95 px-3 py-1 rounded border transition-all duration-300 font-bold ${
-                        dingFlash
-                          ? 'border-[#F5B800] text-white bg-[#F5B800]/30 shadow-[0_0_20px_#F5B800] scale-110'
-                          : isFlickering
-                          ? 'border-[#F5B800]/80 text-[#F5B800] opacity-60'
-                          : 'border-[#F5B800]/40 text-[#F5B800] shadow-[0_0_12px_rgba(245,184,0,0.35)]'
-                      }`}
-                    >
-                      LEVEL {rideState === 'moving' ? displayFloor : activeLevelDisplay}
-                    </div>
-                  </div>
-
-                  {/* Left Pulsing Gold Light Strip */}
-                  <div
-                    className={`absolute left-2.5 sm:left-3 top-14 bottom-6 w-[2px] rounded-full z-25 pointer-events-none transition-all duration-300 ${
-                      dingFlash ? 'opacity-100 shadow-[0_0_30px_#F5B800]' : 'animate-pulse'
-                    }`}
-                    style={{
-                      backgroundColor: config.colors.gold,
-                      boxShadow: dingFlash
-                        ? `0 0 25px ${config.colors.gold}, 0 0 50px rgba(245, 184, 0, 0.9)`
-                        : `0 0 16px ${config.colors.gold}, 0 0 32px rgba(245, 184, 0, 0.65)`,
-                      animationDuration: '3.2s',
-                    }}
-                  />
-
-                  {/* Right Pulsing Gold Light Strip */}
-                  <div
-                    className={`absolute right-2.5 sm:right-3 top-14 bottom-6 w-[2px] rounded-full z-25 pointer-events-none transition-all duration-300 ${
-                      dingFlash ? 'opacity-100 shadow-[0_0_30px_#F5B800]' : 'animate-pulse'
-                    }`}
-                    style={{
-                      backgroundColor: config.colors.gold,
-                      boxShadow: dingFlash
-                        ? `0 0 25px ${config.colors.gold}, 0 0 50px rgba(245, 184, 0, 0.9)`
-                        : `0 0 16px ${config.colors.gold}, 0 0 32px rgba(245, 184, 0, 0.65)`,
-                      animationDuration: '3.2s',
-                    }}
-                  />
-
-                  {/* Elevator Aperture: Dark Floor Screen Behind the Live Doors */}
-                  <div className="relative w-full h-full rounded-xl overflow-hidden border border-white/10 flex shadow-inner bg-[#0b0b0b]">
-                    
-                    {/* 1. Behind the Doors: Dark Screen Showing Floor Content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-5 bg-gradient-to-b from-[#141414] via-[#0b0b0b] to-[#080808]">
-                      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
-
-                      <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-[#F5B800]/40 bg-[#F5B800]/10 text-[#F5B800] text-[10px] font-mono tracking-[0.25em] uppercase mb-3">
-                        <span>LEVEL {activeLevelDisplay}</span>
-                      </div>
-
-                      <h2 className="font-display text-xl sm:text-2xl font-extrabold uppercase tracking-tight text-white mb-2">
-                        {currentFloor === 'lobby' ? 'LOBBY' : currentFloorData?.name}
-                      </h2>
-
-                      <p className="text-[11px] sm:text-xs font-sans text-zinc-400 max-w-[240px] leading-relaxed">
-                        {currentFloor === 'lobby'
-                          ? 'The Grand Lobby of Gotham Collage.'
-                          : currentFloorData?.description}
-                      </p>
-
-                      <div
-                        className="absolute bottom-4 w-40 h-10 rounded-full blur-2xl opacity-25 pointer-events-none"
-                        style={{ background: config.colors.goldGlow }}
-                      />
-                    </div>
-
-                    {/* 2. Motion Streaks / Vertical Animation for Up/Down */}
-                    {rideState === 'moving' && (
-                      <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
-                        <div
-                          className="w-full h-full opacity-35 animate-pulse"
-                          style={{
-                            background:
-                              direction === 'up'
-                                ? 'repeating-linear-gradient(0deg, transparent, transparent 15px, rgba(245, 184, 0, 0.2) 15px, rgba(245, 184, 0, 0.2) 30px)'
-                                : 'repeating-linear-gradient(180deg, transparent, transparent 15px, rgba(245, 184, 0, 0.2) 15px, rgba(245, 184, 0, 0.2) 30px)',
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {/* 3. Left Sliding Door Panel */}
-                    <div
-                      className="relative w-1/2 h-full overflow-hidden border-r border-[#1a1a1a] z-15 will-change-transform"
-                      style={{
-                        transform: doorsOpen ? 'translateX(-100%)' : 'translateX(0%)',
-                        transition: 'transform 0.85s cubic-bezier(0.4, 0.0, 0.2, 1)',
-                      }}
-                    >
-                      <img
-                        src="/images/door-chrome.jpg"
-                        alt="Elevator Door Left"
-                        className="w-full h-full object-cover object-left filter brightness-95 contrast-125 select-none pointer-events-none"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-black/35 pointer-events-none" />
-
-                      {/* Left half of the logo pinned to the right edge */}
-                      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 pointer-events-none z-20">
-                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-black/75 border border-white/20 p-3 flex items-center justify-center shadow-[0_10px_35px_rgba(0,0,0,0.9)] backdrop-blur-md">
-                          <img
-                            src="/images/gc-logo.png"
-                            alt="Gotham Collage Seal Left"
-                            className="w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,184,0,0.5)]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 4. Right Sliding Door Panel */}
-                    <div
-                      className="relative w-1/2 h-full overflow-hidden border-l border-[#1a1a1a] z-15 will-change-transform"
-                      style={{
-                        transform: doorsOpen ? 'translateX(100%)' : 'translateX(0%)',
-                        transition: 'transform 0.85s cubic-bezier(0.4, 0.0, 0.2, 1)',
-                      }}
-                    >
-                      <img
-                        src="/images/door-chrome.jpg"
-                        alt="Elevator Door Right"
-                        className="w-full h-full object-cover object-right filter brightness-95 contrast-125 select-none pointer-events-none"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-l from-black/55 via-transparent to-black/35 pointer-events-none" />
-
-                      {/* Right half of the logo pinned to the left edge */}
-                      <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-20">
-                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-black/75 border border-white/20 p-3 flex items-center justify-center shadow-[0_10px_35px_rgba(0,0,0,0.9)] backdrop-blur-md">
-                          <img
-                            src="/images/gc-logo.png"
-                            alt="Gotham Collage Seal Right"
-                            className="w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,184,0,0.5)]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 5. Center Door Seam Recess */}
-                    {!doorsOpen && (
-                      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-black shadow-[0_0_6px_rgba(0,0,0,0.9)] z-25 pointer-events-none" />
-                    )}
-
-                    {/* 6. Click to Open / Close Indicator in Lobby */}
-                    {currentFloor === 'lobby' && !isRideInProgress && (
-                      <div className="absolute bottom-5 inset-x-0 flex justify-center z-30 pointer-events-none">
-                        <div className="px-3 py-1 rounded-full border border-[#F5B800]/40 bg-black/85 backdrop-blur-md text-[10px] font-mono tracking-widest uppercase text-[#F5B800] group-hover:border-[#F5B800] group-hover:bg-[#F5B800]/20 transition-all shadow-lg flex items-center space-x-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800] animate-pulse" />
-                          <span>{doorsOpen ? 'CLICK TO CLOSE LIFT' : 'CLICK TO OPEN GC LIFT'}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </>
-        )}
-
-        {/* Right Side: Floor Panel (stays visible on every floor so user can jump at any time) */}
-        <div className="w-full lg:w-1/3 flex flex-col items-center lg:items-end justify-center animate-fade-in z-20">
-          <div className="flex flex-col items-center space-y-4 p-5 sm:p-6 rounded-2xl border border-white/10 bg-[#0e0e0e]/85 backdrop-blur-md shadow-2xl">
-            {/* Header */}
-            <div className="flex items-center space-x-2 text-[10px] font-mono uppercase tracking-[0.25em] text-[#a1a1aa] pb-2 border-b border-white/10 w-full justify-center">
-              <span>FLOOR SELECTOR</span>
-            </div>
-
-            {/* Vertical Stack: 04, 03, 02, 01 */}
-            <div className="flex flex-col space-y-3 w-44 sm:w-48">
-              {floors.map((floor) => {
-                const isSelected = (currentFloor === floor.id && !isRideInProgress) || (isRideInProgress && targetFloor === floor.id);
-                const isKeyboardFocused = highlightedFloor === floor.id;
-
-                return (
-                  <button
-                    key={floor.id}
-                    onClick={() => handleFloorJump(floor.id)}
-                    disabled={isRideInProgress}
-                    className={`group relative flex items-center justify-between px-4 py-3 rounded-xl border font-mono transition-all duration-300 text-xs ${
-                      isRideInProgress
-                        ? isSelected
-                          ? 'border-[#F5B800] bg-[#F5B800] text-black font-extrabold shadow-[0_0_25px_rgba(245,184,0,0.7)] scale-[1.03] cursor-wait'
-                          : 'border-white/10 bg-[#121212]/50 text-zinc-600 cursor-not-allowed'
-                        : isSelected
-                        ? 'border-[#F5B800] bg-[#F5B800] text-black font-extrabold shadow-[0_0_22px_rgba(245,184,0,0.65)] scale-[1.03] cursor-pointer'
-                        : isKeyboardFocused
-                        ? 'border-[#F5B800]/80 bg-[#141414] text-[#F5B800] shadow-[0_0_15px_rgba(245,184,0,0.3)] cursor-pointer'
-                        : 'border-white/15 bg-[#141414]/90 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:shadow-[0_0_18px_rgba(245,184,0,0.4)] hover:scale-102 cursor-pointer'
-                    }`}
-                  >
-                    <span className="font-display text-sm tracking-wider">
-                      {floor.id}
+                  )}
+                  {!isMajorFloor && (
+                    <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">
+                      SECT {(idx * 120).toString().padStart(4, '0')}
                     </span>
-                    <span
-                      className={`text-[10px] uppercase tracking-wider truncate max-w-[95px] ${
-                        isSelected
-                          ? 'text-black/85 font-bold'
-                          : 'text-[#8a8a88] group-hover:text-[#F5B800]'
-                      }`}
-                    >
-                      {floor.name}
-                    </span>
-                    {isSelected && (
-                      <span className="w-2 h-2 rounded-full bg-black shadow-[0_0_6px_black]" />
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* Lobby Button */}
-              <button
-                onClick={() => handleFloorJump('lobby')}
-                disabled={isRideInProgress}
-                className={`group relative flex items-center justify-between px-4 py-2.5 rounded-xl border font-mono transition-all duration-300 text-xs ${
-                  isRideInProgress
-                    ? targetFloor === 'lobby'
-                      ? 'border-[#F5B800] bg-[#F5B800] text-black font-extrabold shadow-[0_0_20px_rgba(245,184,0,0.6)] cursor-wait'
-                      : 'border-white/10 bg-[#121212]/50 text-zinc-600 cursor-not-allowed'
-                    : currentFloor === 'lobby'
-                    ? 'border-[#F5B800] bg-[#F5B800] text-black font-extrabold shadow-[0_0_20px_rgba(245,184,0,0.6)] cursor-pointer'
-                    : 'border-white/15 bg-[#141414]/90 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:shadow-[0_0_15px_rgba(245,184,0,0.3)] cursor-pointer'
-                }`}
-              >
-                <span className="font-display text-xs tracking-wider">00</span>
-                <span className={`text-[10px] uppercase tracking-wider ${currentFloor === 'lobby' ? 'text-black font-bold' : 'text-[#8a8a88] group-hover:text-[#F5B800]'}`}>
-                  LOBBY
-                </span>
-                {currentFloor === 'lobby' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-black" />
-                )}
-              </button>
-            </div>
-
-            {/* Floor Step Direction Controls (▲ / ▼) */}
-            <div className="flex items-center justify-center space-x-3 pt-3 w-full border-t border-white/10">
-              <button
-                onClick={() => {
-                  const selectable = ['01', '02', '03', '04'];
-                  const curIdx = selectable.indexOf(currentFloor);
-                  if (curIdx < selectable.length - 1) handleFloorJump(selectable[curIdx + 1]);
-                }}
-                disabled={isRideInProgress || currentFloor === '04'}
-                className={`w-9 h-9 rounded-lg border font-mono text-sm flex items-center justify-center transition-all ${
-                  isRideInProgress || currentFloor === '04'
-                    ? 'border-white/5 bg-black/20 text-zinc-700 cursor-not-allowed'
-                    : 'border-white/15 bg-black/60 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:bg-[#F5B800]/15 hover:shadow-[0_0_12px_rgba(245,184,0,0.35)] cursor-pointer active:scale-95'
-                }`}
-                title="Next Floor Up"
-              >
-                ▲
-              </button>
-              <button
-                onClick={() => {
-                  const selectable = ['01', '02', '03', '04'];
-                  const curIdx = selectable.indexOf(currentFloor);
-                  if (curIdx > 0) handleFloorJump(selectable[curIdx - 1]);
-                  else if (currentFloor !== 'lobby') handleFloorJump('lobby');
-                }}
-                disabled={isRideInProgress || currentFloor === 'lobby'}
-                className={`w-9 h-9 rounded-lg border font-mono text-sm flex items-center justify-center transition-all ${
-                  isRideInProgress || currentFloor === 'lobby'
-                    ? 'border-white/5 bg-black/20 text-zinc-700 cursor-not-allowed'
-                    : 'border-white/15 bg-black/60 text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:bg-[#F5B800]/15 hover:shadow-[0_0_12px_rgba(245,184,0,0.35)] cursor-pointer active:scale-95'
-                }`}
-                title="Next Floor Down"
-              >
-                ▼
-              </button>
-            </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
       </div>
+
+
+      {/* ==============================================================
+          LAYER 2, 3, 4: LIFT CAR (Centred, 40% Width, 70% Height)
+          Thick metal frame, sliding chrome doors, centered real logo,
+          thin gold light strips, floor display, built-in button panel.
+      ============================================================== */}
+      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+        
+        {/* Car Outer Centered Fixture */}
+        <div
+          ref={carWrapperRef}
+          className="relative w-[340px] sm:w-[400px] md:w-[460px] lg:w-[40vw] max-w-[540px] h-[70vh] min-h-[480px] max-h-[660px] flex items-center justify-center will-change-transform transition-[opacity,filter] duration-700 pointer-events-auto"
+        >
+          {/* Thick Dark Metal Frame */}
+          <div className="relative w-full h-full rounded-xl border-[14px] sm:border-[18px] md:border-[20px] border-[#151518] bg-[#0a0a0c] shadow-[0_30px_90px_rgba(0,0,0,0.98),inset_0_4px_16px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col">
+
+            {/* ==========================================================
+                LAYER 3: FLOOR DISPLAY (above doors in transom)
+            ========================================================== */}
+            <div className="relative w-full h-12 bg-[#0e0e11] border-b border-[#202025] flex items-center justify-between px-5 z-30">
+              <div className="flex items-center space-x-1 font-mono text-[11px]">
+                <span className={`text-[#F5B800] font-bold ${stateName === 'MOVING' ? 'animate-pulse' : ''}`}>▲</span>
+                <span className="text-zinc-600 font-bold">▼</span>
+              </div>
+
+              {/* Digital LED Readout in Gold */}
+              <div className="px-3 py-0.5 rounded border border-[#F5B800]/40 bg-black/90 font-mono text-sm tracking-[0.25em] font-extrabold text-[#F5B800] shadow-[0_0_12px_rgba(245,184,0,0.35)]">
+                LEVEL {displayFloor}
+              </div>
+
+              <div className="text-[9px] font-mono tracking-widest text-[#71717a] uppercase">
+                GC VENTURE CAR
+              </div>
+            </div>
+
+            {/* Doorway Opening */}
+            <div className="relative flex-1 w-full overflow-hidden bg-black flex">
+              
+              {/* Warm Amber Light Spill from doorway when opened */}
+              <div
+                ref={doorwayGlowRef}
+                className="absolute inset-0 pointer-events-none opacity-0 z-5 transition-opacity"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, rgba(245, 184, 0, 0.45) 0%, rgba(245, 184, 0, 0.12) 50%, transparent 85%)',
+                }}
+              />
+
+              {/* Thin Vertical Gold Light Strip (Left) */}
+              <div
+                ref={leftGoldStripRef}
+                className="absolute left-1.5 top-2 bottom-2 w-[2px] rounded-full z-25 pointer-events-none animate-pulse"
+                style={{
+                  backgroundColor: config.colors.gold,
+                  boxShadow: `0 0 14px ${config.colors.gold}, 0 0 28px rgba(245, 184, 0, 0.6)`,
+                  animationDuration: '3.0s',
+                }}
+              />
+
+              {/* Thin Vertical Gold Light Strip (Right) */}
+              <div
+                ref={rightGoldStripRef}
+                className="absolute right-1.5 top-2 bottom-2 w-[2px] rounded-full z-25 pointer-events-none animate-pulse"
+                style={{
+                  backgroundColor: config.colors.gold,
+                  boxShadow: `0 0 14px ${config.colors.gold}, 0 0 28px rgba(245, 184, 0, 0.6)`,
+                  animationDuration: '3.0s',
+                }}
+              />
+
+              {/* Left Sliding Door Panel */}
+              <div
+                ref={leftDoorRef}
+                className="relative w-1/2 h-full overflow-hidden border-r border-[#151518] z-15 will-change-transform bg-black"
+                style={{ transform: 'translateX(0%)' }}
+              >
+                <img
+                  src="/images/door-chrome.jpg"
+                  alt="Elevator Door Left"
+                  className="w-full h-full object-cover object-left filter brightness-95 contrast-125 pointer-events-none"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/35 pointer-events-none" />
+
+                {/* Real Logo Left Half (transparent PNG / mix-blend-mode: screen, NO black box) */}
+                <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 pointer-events-none z-20 flex items-center justify-center">
+                  <img
+                    src="/images/gc-logo.png"
+                    alt="GC Logo Left"
+                    className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(245,184,0,0.65)]"
+                    style={{ mixBlendMode: 'screen' }}
+                  />
+                </div>
+              </div>
+
+              {/* Right Sliding Door Panel */}
+              <div
+                ref={rightDoorRef}
+                className="relative w-1/2 h-full overflow-hidden border-l border-[#151518] z-15 will-change-transform bg-black"
+                style={{ transform: 'translateX(0%)' }}
+              >
+                <img
+                  src="/images/door-chrome.jpg"
+                  alt="Elevator Door Right"
+                  className="w-full h-full object-cover object-right filter brightness-95 contrast-125 pointer-events-none"
+                />
+                <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-transparent to-black/35 pointer-events-none" />
+
+                {/* Real Logo Right Half (transparent PNG / mix-blend-mode: screen, NO black box) */}
+                <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 pointer-events-none z-20 flex items-center justify-center">
+                  <img
+                    src="/images/gc-logo.png"
+                    alt="GC Logo Right"
+                    className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(245,184,0,0.65)]"
+                    style={{ mixBlendMode: 'screen' }}
+                  />
+                </div>
+              </div>
+
+              {/* Faint dust specks drifting during moving */}
+              <div ref={specksContainerRef} className="absolute inset-0 pointer-events-none z-18 opacity-0">
+                {dustSpecks.map((s) => (
+                  <div
+                    key={s.id}
+                    className="absolute rounded-full bg-[#F5B800] shadow-[0_0_6px_#F5B800]"
+                    style={{
+                      left: s.left,
+                      top: s.top,
+                      width: s.size,
+                      height: s.size,
+                      opacity: s.opacity,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Center Seam */}
+              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-black shadow-[0_0_6px_black] z-25 pointer-events-none" />
+            </div>
+
+          </div>
+
+          {/* ==========================================================
+              LAYER 4: BUTTON PANEL (built into right of car frame)
+              Only four buttons: 04, 03, 02, 01 from top to bottom.
+          ========================================================== */}
+          <div className="absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 w-11 sm:w-13 py-4 rounded-r-xl border-y border-r border-white/10 bg-[#111114] shadow-2xl flex flex-col items-center space-y-3 z-35">
+            <div className="text-[7px] font-mono uppercase tracking-widest text-[#71717a]">
+              PANEL
+            </div>
+
+            {/* Buttons 04, 03, 02, 01 */}
+            <div className="flex flex-col space-y-2 w-full px-1.5">
+              {floorButtons.map((btnId) => {
+                const isSelected = targetFloor === btnId;
+                const isKeyFocused = highlightedFloor === btnId;
+
+                return (
+                  <button
+                    key={btnId}
+                    onClick={() => launchFloorTransition(btnId)}
+                    disabled={isBusy}
+                    title={`Floor ${btnId}`}
+                    className={`w-full py-2 rounded-md font-mono text-xs font-bold transition-all duration-200 flex items-center justify-center cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#F5B800] text-black shadow-[0_0_18px_rgba(245,184,0,0.7)] scale-105'
+                        : isKeyFocused
+                        ? 'border border-[#F5B800] text-[#F5B800] bg-[#18181c] shadow-[0_0_12px_rgba(245,184,0,0.35)]'
+                        : 'border border-white/10 bg-[#161619] text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:shadow-[0_0_12px_rgba(245,184,0,0.4)]'
+                    }`}
+                  >
+                    {btnId}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Keycard Sensor Bar */}
+            <div className="w-5 h-1 rounded-full bg-[#F5B800]/50 shadow-[0_0_6px_#F5B800]" />
+          </div>
+
+        </div>
+
+      </div>
+
+
+      {/* ==============================================================
+          LAYER 6: REVEAL & FLOOR CONTENT
+          Renders inside the doorway opening and scales up toward viewer
+          to fill the screen. Lift car and shaft remain visible behind.
+      ============================================================== */}
+      <div
+        ref={contentPortalRef}
+        className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden opacity-0"
+        style={{ transform: 'scale(0.22)', transformOrigin: 'center center' }}
+      >
+        <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-12 lg:p-20 overflow-y-auto">
+
+          {/* Top Bar inside Content Screen: Back to Lift Button */}
+          <div className="relative z-20 flex items-center justify-between w-full pt-14">
+            <button
+              onClick={handleReturnToLift}
+              disabled={isBusy}
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/20 bg-black/80 hover:border-[#F5B800] hover:text-[#F5B800] text-xs font-mono uppercase tracking-widest text-[#e8e8e6] transition-all shadow-xl cursor-pointer active:scale-95"
+            >
+              <span>← Back to lift</span>
+            </button>
+
+            {/* Current Level Pill */}
+            <div className="px-3.5 py-1 rounded-full border border-[#F5B800]/40 bg-black/80 text-[11px] font-mono uppercase tracking-[0.25em] text-[#F5B800]">
+              FLOOR {activeFloorContent}
+            </div>
+          </div>
+
+          {/* Main Floor Copy Area (Strictly from SPEC.md) */}
+          <div className="relative z-20 my-auto max-w-3xl flex flex-col space-y-6 text-left">
+            
+            {/* FLOOR 01: ABOUT GOTHAM */}
+            {activeFloorContent === '01' && (
+              <div className="flex flex-col space-y-6 animate-fade-in">
+                <div className="inline-flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                    ABOUT GOTHAM
+                  </span>
+                </div>
+
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/80 border border-white/20 p-2 shadow-[0_0_25px_rgba(245,184,0,0.3)]">
+                  <img src="/images/gc-logo.png" alt="Gotham Collage Seal" className="w-full h-full object-contain" />
+                </div>
+
+                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-white leading-tight">
+                  STUDENT-LED VENTURE STUDIO
+                </h1>
+
+                <p className="font-sans text-base sm:text-lg lg:text-xl text-[#e8e8e6] leading-relaxed max-w-2xl font-light">
+                  Gotham Collage is a student-led venture studio where ambitious students come together to build real-world projects. We believe in learning by building and creating things that solve real problems.
+                </p>
+              </div>
+            )}
+
+            {/* FLOOR 02: THE METHOD */}
+            {activeFloorContent === '02' && (
+              <div className="flex flex-col space-y-6 animate-fade-in">
+                <div className="inline-flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                    THE METHOD
+                  </span>
+                </div>
+
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-tight text-white leading-tight">
+                  BUILD • IDENTIFY • CREATE
+                </h1>
+
+                {/* 3 Pillars */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                  {[
+                    {
+                      key: 'BUILD',
+                      title: 'BUILD',
+                      text: 'We collaborate as students and build projects from scratch.',
+                    },
+                    {
+                      key: 'IDENTIFY',
+                      title: 'IDENTIFY',
+                      text: 'After launching and validating projects, we identify people with the potential to become founders.',
+                    },
+                    {
+                      key: 'CREATE',
+                      title: 'CREATE',
+                      text: 'We work with selected founders to turn successful projects into independent startups through equity partnerships.',
+                    },
+                  ].map((p) => {
+                    const isLit = selectedPillar === p.key;
+                    return (
+                      <div
+                        key={p.key}
+                        onMouseEnter={() => setSelectedPillar(p.key)}
+                        onClick={() => setSelectedPillar(p.key)}
+                        className={`p-5 rounded-xl border transition-all duration-300 cursor-pointer ${
+                          isLit
+                            ? 'border-[#F5B800] bg-[#121215]/90 shadow-[0_0_25px_rgba(245,184,0,0.35)]'
+                            : 'border-white/10 bg-black/60 hover:border-white/30'
+                        }`}
+                      >
+                        <div className={`font-display text-sm tracking-wider font-extrabold mb-2 ${isLit ? 'text-[#F5B800]' : 'text-white'}`}>
+                          {p.title}
+                        </div>
+                        <p className="text-xs sm:text-sm font-sans text-[#a1a1aa] leading-relaxed">
+                          {p.text}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-2 text-sm sm:text-base font-mono text-[#F5B800]">
+                  We don't just teach entrepreneurship. We build real things.
+                </div>
+              </div>
+            )}
+
+            {/* FLOOR 03: PROJECT ARCHIVE */}
+            {activeFloorContent === '03' && (
+              <div className="flex flex-col space-y-6 animate-fade-in">
+                <div className="inline-flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                    PROJECT ARCHIVE
+                  </span>
+                </div>
+
+                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-white">
+                  PROJECT 001
+                </h1>
+
+                {/* Pill */}
+                <div className="inline-flex items-center self-start px-3.5 py-1.5 rounded-full border border-white/20 bg-white/5 text-[11px] font-mono tracking-widest text-[#e8e8e6]">
+                  STATUS : IN DEVELOPMENT
+                </div>
+
+                <p className="font-sans text-base sm:text-lg text-[#a1a1aa] max-w-xl">
+                  Our first project is in the works. Stay tuned.
+                </p>
+
+                {/* Link: Learn More → */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowLearnMoreModal(true)}
+                    className="inline-flex items-center space-x-2 text-sm font-mono uppercase tracking-wider text-[#F5B800] hover:text-white transition-colors cursor-pointer group"
+                  >
+                    <span>Learn More</span>
+                    <span className="transition-transform group-hover:translate-x-1">→</span>
+                  </button>
+                </div>
+
+                {/* Learn More Modal */}
+                {showLearnMoreModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="w-full max-w-md p-6 rounded-2xl border border-white/20 bg-[#101014] shadow-2xl flex flex-col space-y-4">
+                      <div className="text-xs font-mono uppercase tracking-widest text-[#F5B800]">
+                        PROJECT ARCHIVE NOTICE
+                      </div>
+                      <p className="text-sm font-sans text-[#e8e8e6] leading-relaxed">
+                        Status: in development. Details will be shared when we launch.
+                      </p>
+                      <button
+                        onClick={() => setShowLearnMoreModal(false)}
+                        className="self-end px-4 py-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-mono uppercase text-white transition-colors cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* FLOOR 04: OUR VISION */}
+            {activeFloorContent === '04' && (
+              <div className="flex flex-col space-y-6 animate-fade-in">
+                <div className="inline-flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                    OUR VISION
+                  </span>
+                </div>
+
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase tracking-tight text-white leading-tight max-w-2xl">
+                  FROM STUDENTS TO BUILDERS. FROM BUILDERS TO FOUNDERS.
+                </h1>
+
+                <p className="font-sans text-sm sm:text-base text-[#a1a1aa] max-w-xl leading-relaxed">
+                  We want to create an ecosystem where students don't have to wait for opportunities to build something meaningful.
+                </p>
+
+                <div className="pt-3">
+                  <a
+                    href={config.socials.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-3 px-6 py-3 rounded-full border border-[#F5B800] text-[#F5B800] hover:bg-[#F5B800]/15 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_18px_rgba(245,184,0,0.35)] cursor-pointer"
+                  >
+                    <span>Join The Movement</span>
+                    <span>→</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          <div className="relative z-20 pb-4 text-left text-[10px] font-mono text-[#71717a] uppercase tracking-widest">
+            GOTHAM COLLAGE FOUNDRY • ALL SPEC (v2) ARCHIVES VERIFIED
+          </div>
+
+        </div>
+      </div>
+
+
+      {/* ==============================================================
+          DING FLASH OVERLAY (on arrival)
+      ============================================================== */}
+      <div
+        ref={dingFlashRef}
+        className="fixed inset-0 z-60 pointer-events-none opacity-0"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(245, 184, 0, 0.65) 0%, rgba(245, 184, 0, 0.2) 50%, transparent 100%)',
+        }}
+      />
+
     </div>
   );
 }
