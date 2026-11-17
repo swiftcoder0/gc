@@ -116,13 +116,13 @@ export default function PortalHero() {
       tl.to(contentRef.current, { opacity: 0, duration: 0.4, ease: 'power2.out' }, 0);
     }
 
-    // Zoom camera directly forward into the center of the portal rings
+    // Zoom camera directly forward into the center of the portal rings (Analyzed coordinates: 69.2% 45.2%)
     if (bgRef.current) {
       tl.to(
         bgRef.current,
         {
-          scale: 6.2,
-          transformOrigin: '50% 50%',
+          scale: 6.5,
+          transformOrigin: '69.2% 45.2%',
           duration: 2.2,
           ease: 'power3.in',
         },
@@ -290,7 +290,22 @@ export default function PortalHero() {
         <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
       </div>
 
-      {/* 2. Fog Layer with Independent Parallax Speed */}
+      {/* 2. White Light Glow Directly Inside the Circular Ring Opening (X: 69.2%, Y: 45.2%) */}
+      <div
+        className={`pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ${
+          isHoveringPortalButton ? 'opacity-90 scale-130' : 'opacity-25 scale-100'
+        }`}
+        style={{ left: '69.2%', top: '45.2%' }}
+      >
+        <div
+          className="w-24 h-24 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-full blur-2xl"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 40%, transparent 70%)',
+          }}
+        />
+      </div>
+
+      {/* 3. Fog Layer with Independent Parallax Speed */}
       <div
         ref={fogRef}
         className="pointer-events-none absolute inset-x-0 bottom-0 h-64 z-10 opacity-30 will-change-transform"
