@@ -109,10 +109,10 @@ class ElevatorAudioEngine {
  * Strictly governed by SPEC (v2) and Latest Requirements:
  * 1) BACKGROUND: Clean deep-black space (#0b0b0b) with canvas starfield
  *    - ~140 stars (desktop) / 70 stars (phones) in 3 depth layers
- *    - Mostly white with ~10% warm gold (#F5B800)
- *    - IDLE: slow drift & gentle twinkling; dark vignette & faint warm glow behind lift
+ *    - Mostly white with ~10% ice cyan (#8FE8FF)
+ *    - IDLE: slow drift & gentle twinkling; dark vignette & faint pale glow behind lift
  *    - MOVING: stars stretch into vertical streaks in direction of travel (ease in 0.5s, hold, ease out 0.5s)
- *    - ARRIVAL: soft gold glow pulse behind lift
+ *    - ARRIVAL: soft ice cyan glow pulse behind lift
  *    - Lightweight: requestAnimationFrame, DPR capped at 2, reduced-motion fallback
  * 2) RETURN GESTURE:
  *    - Double-click / double-tap anywhere on content area (ignoring links/buttons)
@@ -234,7 +234,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
     // 3 depth layers: 0 = Far, 1 = Mid, 2 = Near
     for (let i = 0; i < targetCount; i++) {
       const layer = i % 3; // 0, 1, 2
-      const isGold = Math.random() < 0.10; // ~10% warm gold #F5B800
+      const isCyan = Math.random() < 0.10; // ~10% ice cyan #8FE8FF
       let baseRadius = 0.6;
       let baseAlpha = 0.3;
       let speedFactor = 0.35;
@@ -253,7 +253,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         x: Math.random() * width,
         y: Math.random() * height,
         layer,
-        isGold,
+        isCyan,
         radius: baseRadius,
         baseAlpha,
         alpha: baseAlpha,
@@ -307,8 +307,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
           if (star.y < -50) star.y = height + 40;
         }
 
-        const colorStr = star.isGold
-          ? `rgba(245, 184, 0, ${star.alpha})`
+        const colorStr = star.isCyan
+          ? `rgba(143, 232, 255, ${star.alpha})`
           : `rgba(255, 255, 255, ${star.alpha})`;
 
         // Moving streaks vs Idle points
@@ -714,15 +714,15 @@ export default function ElevatorLobby({ onBackToPortal }) {
       {/* Very Soft Dark Vignette */}
       <div className="absolute inset-0 pointer-events-none z-1 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.85)_100%)]" />
 
-      {/* Faint Warm Ambient Glow Behind the Lift */}
-      <div className="absolute inset-0 pointer-events-none z-1 bg-[radial-gradient(circle_at_50%_50%,rgba(245,184,0,0.08)_0%,transparent_50%)]" />
+      {/* Faint Pale Ambient Glow Behind the Lift */}
+      <div className="absolute inset-0 pointer-events-none z-1 bg-[radial-gradient(circle_at_50%_50%,rgba(143,232,255,0.08)_0%,transparent_50%)]" />
 
-      {/* Arrival Soft Gold Glow Pulse Behind the Lift */}
+      {/* Arrival Soft Ice Cyan Glow Pulse Behind the Lift */}
       <div
         ref={arrivalPulseRef}
         className="absolute inset-0 pointer-events-none z-2 opacity-0 will-change-transform"
         style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(245, 184, 0, 0.40) 0%, rgba(245, 184, 0, 0.12) 40%, transparent 68%)',
+          background: 'radial-gradient(circle at 50% 50%, rgba(143, 232, 255, 0.40) 0%, rgba(143, 232, 255, 0.12) 40%, transparent 68%)',
         }}
       />
 
@@ -747,7 +747,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             onClick={toggleSound}
             className={`px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
               soundEnabled
-                ? 'border-[#F5B800] text-[#F5B800] bg-[#F5B800]/15 shadow-[0_0_10px_rgba(245,184,0,0.3)]'
+                ? 'border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_10px_rgba(143,232,255,0.3)]'
                 : 'border-white/15 text-[#8a8a88] bg-black/50 hover:text-white'
             }`}
           >
@@ -766,7 +766,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             <div className="absolute right-0 mt-2 w-40 py-1.5 bg-[#121215]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
               <button
                 onClick={openMemberLogin}
-                className="w-full text-left px-3.5 py-2 text-[11px] font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#F5B800] transition-colors cursor-pointer"
+                className="w-full text-left px-3.5 py-2 text-[11px] font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#8FE8FF] transition-colors cursor-pointer"
               >
                 Member Portal
               </button>
@@ -793,7 +793,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             href={config.socials.linkedin}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all border border-[#F5B800] text-[#F5B800] hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_12px_rgba(245,184,0,0.3)] cursor-pointer"
+            className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white shadow-[0_0_12px_rgba(143,232,255,0.3)] cursor-pointer"
           >
             Join Now
           </a>
@@ -822,12 +822,12 @@ export default function ElevatorLobby({ onBackToPortal }) {
             ========================================================== */}
             <div className="relative w-full h-13 bg-[#0e0e11] border-b border-[#202025] flex items-center justify-between px-5 z-30">
               <div className="flex items-center space-x-1.5 font-mono text-xs">
-                <span className={`text-[#F5B800] font-bold ${stateName === 'MOVING' ? 'animate-pulse' : ''}`}>▲</span>
+                <span className={`text-[#8FE8FF] font-bold ${stateName === 'MOVING' ? 'animate-pulse' : ''}`}>▲</span>
                 <span className="text-zinc-600 font-bold">▼</span>
               </div>
 
-              {/* Digital LED Readout in Gold */}
-              <div className="px-3.5 py-1 rounded border border-[#F5B800]/40 bg-black/95 font-mono text-sm sm:text-base tracking-[0.25em] font-extrabold text-[#F5B800] shadow-[0_0_14px_rgba(245,184,0,0.35)]">
+              {/* Digital LED Readout in Ice Cyan */}
+              <div className="px-3.5 py-1 rounded border border-[#8FE8FF]/40 bg-black/95 font-mono text-sm sm:text-base tracking-[0.25em] font-extrabold text-[#8FE8FF] shadow-[0_0_14px_rgba(143,232,255,0.35)]">
                 LEVEL {displayFloor}
               </div>
 
@@ -839,33 +839,33 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {/* Doorway Opening */}
             <div className="relative flex-1 w-full overflow-hidden bg-black flex">
               
-              {/* Warm Amber Light Spill from doorway when opened */}
+              {/* Ice Cyan Light Spill from doorway when opened */}
               <div
                 ref={doorwayGlowRef}
                 className="absolute inset-0 pointer-events-none opacity-0 z-5 transition-opacity"
                 style={{
-                  background: 'radial-gradient(circle at 50% 50%, rgba(245, 184, 0, 0.45) 0%, rgba(245, 184, 0, 0.12) 50%, transparent 85%)',
+                  background: 'radial-gradient(circle at 50% 50%, rgba(143, 232, 255, 0.45) 0%, rgba(143, 232, 255, 0.12) 50%, transparent 85%)',
                 }}
               />
 
-              {/* Thin Vertical Gold Light Strip (Left) */}
+              {/* Thin Vertical Ice Cyan Light Strip (Left) */}
               <div
                 ref={leftGoldStripRef}
                 className="absolute left-1.5 top-2 bottom-2 w-[2px] rounded-full z-25 pointer-events-none animate-pulse"
                 style={{
-                  backgroundColor: config.colors.gold,
-                  boxShadow: `0 0 14px ${config.colors.gold}, 0 0 28px rgba(245, 184, 0, 0.6)`,
+                  backgroundColor: config.colors.accent,
+                  boxShadow: `0 0 14px ${config.colors.accent}, 0 0 28px rgba(143, 232, 255, 0.6)`,
                   animationDuration: '3.0s',
                 }}
               />
 
-              {/* Thin Vertical Gold Light Strip (Right) */}
+              {/* Thin Vertical Ice Cyan Light Strip (Right) */}
               <div
                 ref={rightGoldStripRef}
                 className="absolute right-1.5 top-2 bottom-2 w-[2px] rounded-full z-25 pointer-events-none animate-pulse"
                 style={{
-                  backgroundColor: config.colors.gold,
-                  boxShadow: `0 0 14px ${config.colors.gold}, 0 0 28px rgba(245, 184, 0, 0.6)`,
+                  backgroundColor: config.colors.accent,
+                  boxShadow: `0 0 14px ${config.colors.accent}, 0 0 28px rgba(143, 232, 255, 0.6)`,
                   animationDuration: '3.0s',
                 }}
               />
@@ -888,7 +888,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                   <img
                     src="/images/gc-logo-transparent.png"
                     alt="GC Logo Left"
-                    className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(245,184,0,0.65)]"
+                    className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(143,232,255,0.65)]"
                     style={{ mixBlendMode: 'screen' }}
                   />
                 </div>
@@ -912,7 +912,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                   <img
                     src="/images/gc-logo-transparent.png"
                     alt="GC Logo Right"
-                    className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(245,184,0,0.65)]"
+                    className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(143,232,255,0.65)]"
                     style={{ mixBlendMode: 'screen' }}
                   />
                 </div>
@@ -947,10 +947,10 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     title={`Floor ${btnId}`}
                     className={`w-full py-2.5 rounded-md font-mono text-xs font-bold transition-all duration-200 flex items-center justify-center cursor-pointer ${
                       isSelected
-                        ? 'bg-[#F5B800] text-black shadow-[0_0_18px_rgba(245,184,0,0.7)] scale-105'
+                        ? 'border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_15px_rgba(143,232,255,0.45)] scale-105'
                         : isKeyFocused
-                        ? 'border border-[#F5B800] text-[#F5B800] bg-[#18181c] shadow-[0_0_12px_rgba(245,184,0,0.35)]'
-                        : 'border border-white/10 bg-[#161619] text-[#e8e8e6] hover:border-[#F5B800] hover:text-[#F5B800] hover:shadow-[0_0_12px_rgba(245,184,0,0.4)]'
+                        ? 'border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 shadow-[0_0_12px_rgba(143,232,255,0.35)]'
+                        : 'border border-white/10 bg-[#161619] text-[#e8e8e6] hover:border-[#8FE8FF] hover:text-[#8FE8FF] hover:bg-[#8FE8FF]/10 hover:shadow-[0_0_12px_rgba(143,232,255,0.4)]'
                     }`}
                   >
                     {btnId}
@@ -960,7 +960,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             </div>
 
             {/* Keycard Sensor Bar */}
-            <div className="w-5 h-1 rounded-full bg-[#F5B800]/50 shadow-[0_0_6px_#F5B800]" />
+            <div className="w-5 h-1 rounded-full bg-[#8FE8FF]/50 shadow-[0_0_6px_#8FE8FF]" />
           </div>
 
         </div>
@@ -991,7 +991,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             <img
               src="/images/floor-04-skyline.jpg"
               alt="Floor 04 Cube Skyline"
-              className="w-full h-full object-cover object-right"
+              className="w-full h-full object-cover object-right filter-ice-cyan"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
           </div>
@@ -1003,7 +1003,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
             <img
               src="/images/floor-03-archive.jpg"
               alt="Floor 03 Archive"
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-center filter-ice-cyan"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
           </div>
@@ -1016,13 +1016,13 @@ export default function ElevatorLobby({ onBackToPortal }) {
             <button
               onClick={handleReturnToLift}
               disabled={isBusy}
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/20 bg-black/80 hover:border-[#F5B800] hover:text-[#F5B800] text-xs font-mono uppercase tracking-widest text-[#e8e8e6] transition-all shadow-xl cursor-pointer active:scale-95"
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/20 bg-black/80 hover:border-[#8FE8FF] hover:text-[#8FE8FF] text-xs font-mono uppercase tracking-widest text-[#e8e8e6] transition-all shadow-xl cursor-pointer active:scale-95"
             >
               <span>← Back to lift</span>
             </button>
 
             {/* Current Level Pill */}
-            <div className="px-3.5 py-1 rounded-full border border-[#F5B800]/40 bg-black/80 text-[11px] font-mono uppercase tracking-[0.25em] text-[#F5B800]">
+            <div className="px-3.5 py-1 rounded-full border border-[#8FE8FF]/40 bg-black/80 text-[11px] font-mono uppercase tracking-[0.25em] text-[#8FE8FF]">
               FLOOR {activeFloorContent}
             </div>
           </div>
@@ -1034,13 +1034,13 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {activeFloorContent === '01' && (
               <div className="flex flex-col space-y-6 animate-fade-in">
                 <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
                     ABOUT GOTHAM
                   </span>
                 </div>
 
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/80 border border-white/20 p-2 shadow-[0_0_25px_rgba(245,184,0,0.3)]">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/80 border border-white/20 p-2 shadow-[0_0_25px_rgba(143,232,255,0.3)]">
                   <img src="/images/gc-logo.png" alt="Gotham Collage Seal" className="w-full h-full object-contain" />
                 </div>
 
@@ -1058,8 +1058,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {activeFloorContent === '02' && (
               <div className="flex flex-col space-y-6 animate-fade-in">
                 <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
                     THE METHOD
                   </span>
                 </div>
@@ -1095,11 +1095,11 @@ export default function ElevatorLobby({ onBackToPortal }) {
                         onClick={() => setSelectedPillar(p.key)}
                         className={`p-5 rounded-xl border transition-all duration-300 cursor-pointer ${
                           isLit
-                            ? 'border-[#F5B800] bg-[#121215]/90 shadow-[0_0_25px_rgba(245,184,0,0.35)]'
+                            ? 'border-[#8FE8FF] bg-[#121215]/90 shadow-[0_0_25px_rgba(143,232,255,0.35)]'
                             : 'border-white/10 bg-black/60 hover:border-white/30'
                         }`}
                       >
-                        <div className={`font-display text-sm tracking-wider font-extrabold mb-2 ${isLit ? 'text-[#F5B800]' : 'text-white'}`}>
+                        <div className={`font-display text-sm tracking-wider font-extrabold mb-2 ${isLit ? 'text-[#8FE8FF]' : 'text-white'}`}>
                           {p.title}
                         </div>
                         <p className="text-xs sm:text-sm font-sans text-[#a1a1aa] leading-relaxed">
@@ -1110,7 +1110,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                   })}
                 </div>
 
-                <div className="pt-2 text-sm sm:text-base font-mono text-[#F5B800]">
+                <div className="pt-2 text-sm sm:text-base font-mono text-[#8FE8FF]">
                   We don't just teach entrepreneurship. We build real things.
                 </div>
               </div>
@@ -1120,8 +1120,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {activeFloorContent === '03' && (
               <div className="flex flex-col space-y-6 animate-fade-in">
                 <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
                     PROJECT ARCHIVE
                   </span>
                 </div>
@@ -1143,7 +1143,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 <div className="pt-2">
                   <button
                     onClick={() => setShowLearnMoreModal(true)}
-                    className="inline-flex items-center space-x-2 text-sm font-mono uppercase tracking-wider text-[#F5B800] hover:text-white transition-colors cursor-pointer group"
+                    className="inline-flex items-center space-x-2 text-sm font-mono uppercase tracking-wider text-[#8FE8FF] hover:text-white transition-colors cursor-pointer group"
                   >
                     <span>Learn More</span>
                     <span className="transition-transform group-hover:translate-x-1">→</span>
@@ -1154,7 +1154,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 {showLearnMoreModal && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="w-full max-w-md p-6 rounded-2xl border border-white/20 bg-[#101014] shadow-2xl flex flex-col space-y-4">
-                      <div className="text-xs font-mono uppercase tracking-widest text-[#F5B800]">
+                      <div className="text-xs font-mono uppercase tracking-widest text-[#8FE8FF]">
                         PROJECT ARCHIVE NOTICE
                       </div>
                       <p className="text-sm font-sans text-[#e8e8e6] leading-relaxed">
@@ -1176,8 +1176,8 @@ export default function ElevatorLobby({ onBackToPortal }) {
             {activeFloorContent === '04' && (
               <div className="flex flex-col space-y-6 animate-fade-in">
                 <div className="inline-flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
-                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
+                  <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
                     OUR VISION
                   </span>
                 </div>
@@ -1195,7 +1195,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                     href={config.socials.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-3 px-6 py-3 rounded-full border border-[#F5B800] text-[#F5B800] hover:bg-[#F5B800]/15 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_18px_rgba(245,184,0,0.35)] cursor-pointer"
+                    className="inline-flex items-center space-x-3 px-6 py-3 rounded-full border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white transition-all font-mono text-xs uppercase tracking-wider shadow-[0_0_18px_rgba(143,232,255,0.35)] cursor-pointer"
                   >
                     <span>Join The Movement</span>
                     <span>→</span>
@@ -1214,7 +1214,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
 
             {/* Subtle Hint: Double-tap to return to the lift */}
             <div
-              className={`transition-opacity duration-700 pointer-events-none px-3.5 py-1.5 rounded-full border border-[#F5B800]/30 bg-black/80 text-[#F5B800] shadow-[0_0_12px_rgba(245,184,0,0.25)] ${
+              className={`transition-opacity duration-700 pointer-events-none px-3.5 py-1.5 rounded-full border border-[#8FE8FF]/30 bg-black/80 text-[#8FE8FF] shadow-[0_0_12px_rgba(143,232,255,0.25)] ${
                 showHint ? 'opacity-90' : 'opacity-0'
               }`}
             >
@@ -1233,7 +1233,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
         ref={dingFlashRef}
         className="fixed inset-0 z-60 pointer-events-none opacity-0"
         style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(245, 184, 0, 0.65) 0%, rgba(245, 184, 0, 0.2) 50%, transparent 100%)',
+          background: 'radial-gradient(circle at 50% 50%, rgba(143, 232, 255, 0.65) 0%, rgba(143, 232, 255, 0.2) 50%, transparent 100%)',
         }}
       />
 

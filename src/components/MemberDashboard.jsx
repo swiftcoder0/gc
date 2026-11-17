@@ -117,7 +117,7 @@ export default function MemberDashboard() {
                   key={item.id}
                   className={`p-2.5 sm:p-3 rounded-lg backdrop-blur-md border text-left transition-all ${
                     isPersonal
-                      ? 'bg-amber-950/50 border-amber-500/50 shadow-[0_2px_12px_rgba(245,158,11,0.2)]'
+                      ? 'bg-[#8FE8FF]/10 border-[#8FE8FF]/40 shadow-[0_2px_12px_rgba(143,232,255,0.2)]'
                       : 'bg-black/70 border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.85)]'
                   }`}
                 >
@@ -125,7 +125,7 @@ export default function MemberDashboard() {
                     <span
                       className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${
                         isPersonal
-                          ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50'
+                          ? 'bg-[#8FE8FF]/20 text-[#8FE8FF] border border-[#8FE8FF]/40'
                           : 'bg-white/10 text-zinc-300 border border-white/20'
                       }`}
                     >

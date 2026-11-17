@@ -17,10 +17,10 @@ export const config = {
     },
     subLine: 'A venture studio built by ambitious minds.',
     buttonText: 'Enter Our World →',
-    logoPath: '/images/gc-logo.png',
+    logoPath: '/images/gc-logo-transparent.png',
   },
 
-  // Color Palette (SPEC v2: Black, charcoal, white, silver + ONE warm gold accent <10%)
+  // Color Palette (SPEC v2: Black, charcoal, white, silver + ONE ice cyan accent <10%)
   colors: {
     black: '#0b0b0b',
     charcoal: '#141414',
@@ -31,10 +31,17 @@ export const config = {
     white: '#ffffff',
     silver: '#c0c0c0',
     silverMuted: '#8f9299',
-    gold: '#F5B800',
-    goldGlow: 'rgba(245, 184, 0, 0.5)',
-    goldSoftGlow: 'rgba(245, 184, 0, 0.25)',
-    goldBorder: 'rgba(245, 184, 0, 0.4)',
+    accent: '#8FE8FF',
+    glow: 'rgba(143, 232, 255, 0.45)',
+    accentGlow: 'rgba(143, 232, 255, 0.45)',
+    accentSoftGlow: 'rgba(143, 232, 255, 0.20)',
+    accentTint: 'rgba(143, 232, 255, 0.10)',
+    accentBorder: 'rgba(143, 232, 255, 0.40)',
+    // Backwards compatibility alias
+    gold: '#8FE8FF',
+    goldGlow: 'rgba(143, 232, 255, 0.45)',
+    goldSoftGlow: 'rgba(143, 232, 255, 0.20)',
+    goldBorder: 'rgba(143, 232, 255, 0.40)',
   },
 
   // Typography (SPEC v2)
@@ -61,13 +68,13 @@ export const config = {
 
   // Image Asset Paths from /public/images
   images: {
-    logo: '/images/gc-logo.png',
-    portalHero: '/images/Lone Wanderer Before the Golden Portal.png',
-    elevatorLobby: '/images/Luxurious Black Marble Elevator Lobby.png',
-    elevatorDoors: '/images/Futuristic Golden-Lit Marble Lobby.png',
+    logo: '/images/gc-logo-transparent.png',
+    portalHero: '/images/portal-hall.jpg',
+    elevatorLobby: '/images/lobby-bg.jpg',
+    elevatorDoors: '/images/door-chrome.jpg',
     methodBackdrop: '/images/Sleek Vertical Brushed Steel.png',
-    orbArchive: '/images/Futuristic Orb in a Glass Display.png',
-    cubeVision: '/images/Futuristic Glass Cube with Golden Orbit.png',
+    orbArchive: '/images/floor-03-archive.jpg',
+    cubeVision: '/images/floor-04-skyline.jpg',
   },
 };
 

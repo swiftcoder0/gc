@@ -4,11 +4,11 @@ import { config } from '../config';
 /**
  * Floor 04: OUR VISION
  * Governed strictly by SPEC (v2):
- * - Background: /public/images/floor-04-skyline.jpg
- * - Eyebrow: OUR VISION (gold #F5B800)
+ * - Background: /public/images/floor-04-skyline.jpg (with filter-ice-cyan)
+ * - Eyebrow: OUR VISION (ice cyan #8FE8FF)
  * - Title: FROM STUDENTS TO BUILDERS. FROM BUILDERS TO FOUNDERS. (Unbounded)
  * - Small line from SPEC.md: "We want to create an ecosystem where students don't have to wait for opportunities to build something meaningful."
- * - Button: "Join The Movement →" (gold-outlined, linking to LinkedIn in config)
+ * - Button: "Join The Movement →" (ice cyan-outlined, linking to LinkedIn in config)
  */
 export default function Floor04Vision() {
   return (
@@ -19,7 +19,7 @@ export default function Floor04Vision() {
         <img
           src="/images/floor-04-skyline.jpg"
           alt="Floor 04 Our Vision"
-          className="w-full h-full object-cover object-center pointer-events-none"
+          className="w-full h-full object-cover object-center pointer-events-none filter-ice-cyan"
         />
 
         {/* Ambient Dark Overlays so text on the left is cleanly readable while preserving the cube & city on the right */}
@@ -34,8 +34,8 @@ export default function Floor04Vision() {
         
         {/* Eyebrow Label & Level Tag */}
         <div className="inline-flex items-center space-x-3">
-          <span className="w-2 h-2 rounded-full bg-[#F5B800] shadow-[0_0_10px_#F5B800]" />
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#F5B800] font-semibold">
+          <span className="w-2 h-2 rounded-full bg-[#8FE8FF] shadow-[0_0_10px_#8FE8FF]" />
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#8FE8FF] font-semibold">
             OUR VISION
           </span>
           <span className="text-[10px] font-mono uppercase tracking-widest text-[#8a8a88] border-l border-white/20 pl-3">
@@ -59,16 +59,16 @@ export default function Floor04Vision() {
           We want to create an ecosystem where students don't have to wait for opportunities to build something meaningful.
         </p>
 
-        {/* Button: Join The Movement → (gold-outlined) */}
+        {/* Button: Join The Movement → (ice cyan-outlined, 1px border, 10% tint) */}
         <div className="pt-2 sm:pt-4">
           <a
             href={config.socials.linkedin}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center space-x-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full border border-[#F5B800] bg-[#0b0b0b]/80 text-white font-mono text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_20px_rgba(245,184,0,0.35)] hover:shadow-[0_0_40px_rgba(245,184,0,0.7)] hover:bg-[#F5B800]/20 hover:border-[#F5B800] transition-all duration-300 active:scale-95"
+            className="group inline-flex items-center space-x-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full border border-[#8FE8FF] bg-[#8FE8FF]/10 text-[#8FE8FF] font-mono text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_20px_rgba(143,232,255,0.35)] hover:shadow-[0_0_35px_rgba(143,232,255,0.55)] hover:bg-[#8FE8FF]/20 hover:text-white transition-all duration-300 active:scale-95"
           >
             <span className="font-semibold text-white">Join The Movement</span>
-            <span className="text-[#F5B800] transition-transform duration-300 group-hover:translate-x-1.5 font-bold">
+            <span className="text-[#8FE8FF] transition-transform duration-300 group-hover:translate-x-1.5 font-bold">
               →
             </span>
           </a>
@@ -76,7 +76,7 @@ export default function Floor04Vision() {
 
         {/* Closing Sub-Pill */}
         <div className="pt-2 flex items-center space-x-3 text-[10px] font-mono uppercase tracking-widest text-[#8a8a88]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#8FE8FF]" />
           <span>STUDENT VENTURE ECOSYSTEM</span>
           <span>•</span>
           <span>TOP FLOOR</span>

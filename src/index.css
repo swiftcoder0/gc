@@ -75,6 +75,11 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
+/* Ice Cyan image tone shift filter for gold lights */
+.filter-ice-cyan {
+  filter: hue-rotate(145deg) saturate(0.85) brightness(1.02);
+}
+
 /* Cinematic Elevator Keyframes & Utilities */
 @keyframes liftCameraShake {
   0%, 100% { transform: translateY(0); }
@@ -98,7 +103,7 @@ body {
   100% { transform: translateY(-120%); opacity: 0; }
 }
 
-@keyframes goldFlicker {
+@keyframes cyanFlicker {
   0%, 100% { opacity: 0.95; }
   12% { opacity: 0.4; }
   24% { opacity: 0.95; }
@@ -107,7 +112,7 @@ body {
   88% { opacity: 0.9; }
 }
 
-@keyframes goldDingFlash {
+@keyframes cyanDingFlash {
   0% { opacity: 0; }
   20% { opacity: 0.5; }
   100% { opacity: 0; }
@@ -117,17 +122,17 @@ body {
   animation: liftCameraShake 0.18s infinite ease-in-out;
 }
 
-.animate-gold-flicker {
-  animation: goldFlicker 0.4s infinite ease-in-out;
+.animate-cyan-flicker {
+  animation: cyanFlicker 0.4s infinite ease-in-out;
 }
 
 .animate-ding-flash {
-  animation: goldDingFlash 0.8s ease-out forwards;
+  animation: cyanDingFlash 0.8s ease-out forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-lift-shake,
-  .animate-gold-flicker,
+  .animate-cyan-flicker,
   .animate-ding-flash {
     animation: none !important;
   }

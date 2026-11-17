@@ -13,6 +13,7 @@ import ElevatorLobby from './ElevatorLobby';
  *    with brightness settling down to normal over about 0.8s.
  * 4) Zero intermediate cube, image, or placeholder squares.
  * 5) Lift scene is pre-mounted and preloaded so nothing pops in.
+ * 6) Accent: Ice Cyan (#8FE8FF) with soft glow rgba(143, 232, 255, 0.45).
  */
 export default function PortalHero() {
   const { openMemberLogin, openAdminLogin } = useAuth();
@@ -52,6 +53,12 @@ export default function PortalHero() {
   const scrollDownRef = useRef(null);
   const warmFlashRef = useRef(null);
 
+  // Hero Copy Entrance Animation Refs
+  const line1Ref = useRef(null);
+  const line2Ref = useRef(null);
+  const labelRef = useRef(null);
+  const buttonRef = useRef(null);
+
   // Preferences
   const isReducedMotion = useRef(false);
   const isMobile = useRef(false);
@@ -62,11 +69,77 @@ export default function PortalHero() {
     isMobile.current = window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches;
 
     // Preload lift images into memory
-    ['/images/door-chrome.jpg', '/images/gc-logo.png'].forEach((src) => {
+    ['/images/door-chrome.jpg', '/images/gc-logo-transparent.png'].forEach((src) => {
       const img = new Image();
       img.src = src;
     });
   }, []);
+
+  // Hero Copy Entrance Animation
+  useEffect(() => {
+    if (currentView !== 'portal') return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const tl = gsap.timeline({ delay: 0.15 });
+
+    if (reduced) {
+      tl.fromTo(
+        [line1Ref.current, line2Ref.current, labelRef.current, buttonRef.current],
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power1.out' }
+      );
+    } else {
+      // 1. "Don't wait." fades in with a slight upward move (0.8s)
+      tl.fromTo(
+        line1Ref.current,
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+      );
+
+      // 2. "BUILD." appears with a quick gold glow pulse (0.6s)
+      tl.fromTo(
+        line2Ref.current,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' },
+        '-=0.15'
+      );
+      tl.fromTo(
+        line2Ref.current,
+        { textShadow: '0 0 0px rgba(245,184,0,0)' },
+        {
+          textShadow: '0 0 35px rgba(245,184,0,0.85), 0 0 65px rgba(245,184,0,0.45)',
+          duration: 0.3,
+          yoyo: true,
+          repeat: 1,
+          ease: 'power2.out',
+          onComplete: () => {
+            if (line2Ref.current) {
+              line2Ref.current.style.textShadow = '0 0 25px rgba(245,184,0,0.45)';
+            }
+          },
+        },
+        '<+=0.1'
+      );
+
+      // 3. Label below headline
+      tl.fromTo(
+        labelRef.current,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' },
+        '-=0.15'
+      );
+
+      // 4. Button
+      tl.fromTo(
+        buttonRef.current,
+        { opacity: 0, y: 10, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(1.4)' },
+        '-=0.15'
+      );
+    }
+
+    return () => tl.kill();
+  }, [currentView]);
 
   // 1. Mouse Parallax on Idle Portal
   useEffect(() => {
@@ -189,7 +262,7 @@ export default function PortalHero() {
       );
     }
 
-    // Middle Ring lights up next
+    // Middle Ring lights up next (ice cyan tone)
     if (midRingRef.current) {
       tl.to(
         midRingRef.current,
@@ -231,7 +304,7 @@ export default function PortalHero() {
       );
     }
 
-    // 1.8s - 2.2s (about 0.4s): Light builds into a bright warm-white flash
+    // 1.8s - 2.2s (about 0.4s): Light builds into a bright warm-white/cyan flash
     if (warmFlashRef.current) {
       tl.to(
         warmFlashRef.current,
@@ -244,7 +317,7 @@ export default function PortalHero() {
       );
     }
 
-    // At 2.2s: Behind the peak warm-white flash, seamlessly reveal the preloaded lift scene
+    // At 2.2s: Behind the peak flash, seamlessly reveal the preloaded lift scene
     tl.call(() => {
       if (portalRootRef.current) {
         portalRootRef.current.style.display = 'none';
@@ -308,8 +381,11 @@ export default function PortalHero() {
           if (midRingRef.current) gsap.set(midRingRef.current, { opacity: 0.2, scale: 1.0 });
           if (innerRingRef.current) gsap.set(innerRingRef.current, { opacity: 0.35, scale: 1.0 });
           if (centerGlowRef.current) gsap.set(centerGlowRef.current, { opacity: 0.25, scale: 1.0 });
-          if (contentRef.current) gsap.set(contentRef.current, { opacity: 1.0 });
-          if (scrollDownRef.current) gsap.set(scrollDownRef.current, { opacity: 1.0 });
+          if (contentRef.current) gsap.set(contentRef.current, { opacity: 1.0, x: 0, y: 0 });
+          if (line1Ref.current) gsap.set(line1Ref.current, { opacity: 1, y: 0 });
+          if (line2Ref.current) gsap.set(line2Ref.current, { opacity: 1, y: 0, textShadow: '0 0 25px rgba(245,184,0,0.45)' });
+          if (labelRef.current) gsap.set(labelRef.current, { opacity: 1, y: 0 });
+          if (buttonRef.current) gsap.set(buttonRef.current, { opacity: 1, y: 0, scale: 1 });
           if (headerRef.current) gsap.set(headerRef.current, { opacity: 1.0 });
 
           setCurrentView('portal');
@@ -392,14 +468,14 @@ export default function PortalHero() {
           pointerEvents: currentView === 'portal' && !isTransitioning ? 'auto' : 'none',
         }}
       >
-        {/* Fullscreen Background Image with Concentric Portal Rings */}
+        {/* Fullscreen Background Image with Concentric Portal Rings (filtered to ice cyan) */}
         <div
           ref={bgRef}
           className="absolute inset-0 z-0 will-change-transform scale-[1.03] transition-[filter] duration-700 ease-out"
           style={{
             filter: isHoveringPortalButton
-              ? 'brightness(1.22) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.25))'
-              : 'brightness(1.0) contrast(1.0)',
+              ? 'hue-rotate(145deg) saturate(0.85) brightness(1.25) contrast(1.1) drop-shadow(0 0 25px rgba(143,232,255,0.35))'
+              : 'hue-rotate(145deg) saturate(0.85) brightness(1.02) contrast(1.0)',
           }}
         >
           <img
@@ -421,10 +497,10 @@ export default function PortalHero() {
               }`}
             />
 
-            {/* Middle Ring */}
+            {/* Middle Ring (Ice Cyan) */}
             <div
               ref={midRingRef}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-[#F5B800]/50 shadow-[0_0_40px_rgba(245,184,0,0.5),inset_0_0_30px_rgba(245,184,0,0.3)] transition-opacity duration-500 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-[#8FE8FF]/50 shadow-[0_0_40px_rgba(143,232,255,0.5),inset_0_0_30px_rgba(143,232,255,0.3)] transition-opacity duration-500 ${
                 isHoveringPortalButton ? 'opacity-60' : 'opacity-20'
               }`}
             />
@@ -445,7 +521,7 @@ export default function PortalHero() {
               }`}
               style={{
                 background:
-                  'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(245,184,0,0.35) 45%, transparent 75%)',
+                  'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(143,232,255,0.45) 45%, transparent 75%)',
               }}
             />
           </div>
@@ -477,9 +553,9 @@ export default function PortalHero() {
         >
           {/* Left: Logo + GOTHAM COLLAGE */}
           <a href="/" className="flex items-center space-x-3 group">
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/60 border border-white/20 p-0.5 flex items-center justify-center group-hover:border-[#F5B800]/50 transition-colors">
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/60 border border-white/20 p-0.5 flex items-center justify-center group-hover:border-[#8FE8FF]/50 transition-colors">
               <img
-                src="/images/gc-logo.png"
+                src="/images/gc-logo-transparent.png"
                 alt="GC"
                 className="w-full h-full object-contain"
               />
@@ -504,7 +580,7 @@ export default function PortalHero() {
                 target={item.external ? '_blank' : undefined}
                 rel={item.external ? 'noopener noreferrer' : undefined}
                 className={`transition-colors duration-200 hover:text-white ${
-                  item.label === 'Join Now' ? 'text-zinc-300 font-semibold hover:text-[#F5B800]' : ''
+                  item.label === 'Join Now' ? 'text-zinc-300 font-semibold hover:text-[#8FE8FF]' : ''
                 }`}
               >
                 {item.label}
@@ -512,7 +588,7 @@ export default function PortalHero() {
             ))}
           </nav>
 
-          {/* Right: Sign In (Member & Admin) + Gold-outlined "Enter Portal" button */}
+          {/* Right: Sign In (Member & Admin) + Ice Cyan-outlined "Enter Portal" button (Rule 3: 1px border, text, 10% tint, soft glow) */}
           <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Sign In Dropdown */}
             <div className="relative group">
@@ -526,7 +602,7 @@ export default function PortalHero() {
               <div className="absolute right-0 mt-2 w-44 py-1.5 bg-[#121215]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
                 <button
                   onClick={openMemberLogin}
-                  className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#F5B800] transition-colors cursor-pointer"
+                  className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#8FE8FF] transition-colors cursor-pointer"
                 >
                   Member Portal
                 </button>
@@ -543,78 +619,69 @@ export default function PortalHero() {
               onClick={triggerFlyThrough}
               onMouseEnter={() => setIsHoveringPortalButton(true)}
               onMouseLeave={() => setIsHoveringPortalButton(false)}
-              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border border-[#F5B800] text-[#F5B800] bg-[#0b0b0b]/70 hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_15px_rgba(245,184,0,0.3)] hover:shadow-[0_0_30px_rgba(245,184,0,0.7)] active:scale-95 cursor-pointer"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border border-[#8FE8FF] text-[#8FE8FF] bg-[#8FE8FF]/10 hover:bg-[#8FE8FF]/20 hover:text-white shadow-[0_0_15px_rgba(143,232,255,0.45)] hover:shadow-[0_0_25px_rgba(143,232,255,0.7)] active:scale-95 cursor-pointer"
             >
               Enter Portal
             </button>
           </div>
         </header>
 
-        {/* Hero Content with Foreground Parallax Depth */}
+        {/* Hero Content: Centred horizontally in the lower-centre of the screen over the walkway path */}
         <div
           ref={contentRef}
-          className="relative z-20 h-[calc(100%-140px)] px-6 sm:px-10 lg:px-14 flex flex-col justify-center max-w-2xl lg:max-w-3xl will-change-transform"
+          className="absolute bottom-8 sm:bottom-12 md:bottom-14 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-20 flex flex-col items-center text-center will-change-transform pointer-events-auto"
         >
-          <div className="space-y-6 sm:space-y-8 animate-fade-in">
-            {/* Eyebrow Label */}
-            <div className="inline-flex items-center space-x-2.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800] shadow-[0_0_8px_#F5B800]" />
-              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.3em] text-[#e8e8e6]/80 font-medium">
-                WELCOME TO GOTHAM COLLAGE
-              </span>
-            </div>
-
+          <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+            
             {/* Headline */}
-            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-[1.08] text-white">
-              IDEAS ARE EVERYWHERE.
-              <br />
-              FOUNDERS ARE BUILT{' '}
+            <h1 className="flex flex-col items-center justify-center leading-none tracking-tight">
+              {/* Line 1: Don't wait. */}
               <span
-                className="text-[#F5B800]"
+                ref={line1Ref}
+                className="font-display font-[200] text-[#bdbdb8] text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[0.04em] block"
+              >
+                Don't wait.
+              </span>
+
+              {/* Line 2: BUILD. */}
+              <span
+                ref={line2Ref}
+                className="font-display font-[700] text-[#e8e8e6] text-4xl sm:text-6xl md:text-7xl lg:text-8xl mt-1 sm:mt-2 block"
                 style={{
-                  textShadow: '0 0 25px rgba(245,184,0,0.55), 0 0 50px rgba(245,184,0,0.25)',
+                  textShadow: '0 0 25px rgba(245,184,0,0.45)',
                 }}
               >
-                HERE.
+                BUILD.
               </span>
             </h1>
 
-            {/* Sub line */}
-            <p className="text-sm sm:text-base lg:text-lg font-sans text-[#e8e8e6]/85 font-normal max-w-xl leading-relaxed">
-              A venture studio built by ambitious minds.
-            </p>
+            {/* Tiny Label: Inter 500, uppercase, 11-12px, letter spacing 0.35em, grey, below headline */}
+            <div
+              ref={labelRef}
+              className="font-sans font-medium uppercase text-[11px] sm:text-[12px] tracking-[0.35em] text-[#8a8a88] pt-1"
+            >
+              GOTHAM COLLAGE · STUDENT-LED VENTURE STUDIO
+            </div>
 
-            {/* Hero Action Button: "Enter Our World →" */}
-            <div className="pt-2 sm:pt-4">
+            {/* Button: Enter → (Gold outline style and glow, smaller) */}
+            <div ref={buttonRef} className="pt-2 sm:pt-3">
               <button
                 onClick={triggerFlyThrough}
                 onMouseEnter={() => setIsHoveringPortalButton(true)}
                 onMouseLeave={() => setIsHoveringPortalButton(false)}
-                className="group inline-flex items-center space-x-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full border border-[#F5B800] bg-[#0b0b0b]/80 text-white font-mono text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_20px_rgba(245,184,0,0.35)] hover:shadow-[0_0_40px_rgba(245,184,0,0.75)] hover:bg-[#F5B800]/20 hover:border-[#F5B800] transition-all duration-300 active:scale-95 cursor-pointer"
+                className="group inline-flex items-center space-x-2 px-5 py-2 rounded-full border border-[#F5B800] bg-[#F5B800]/10 text-[#F5B800] font-mono text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(245,184,0,0.4)] hover:shadow-[0_0_25px_rgba(245,184,0,0.7)] hover:bg-[#F5B800]/20 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
               >
-                <span className="font-semibold text-white">Enter Our World</span>
-                <span className="text-[#F5B800] transition-transform duration-300 group-hover:translate-x-1.5">
-                  →
-                </span>
+                <span className="font-semibold">Enter</span>
+                <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </button>
             </div>
+
           </div>
         </div>
-
-        {/* Scroll Down Hint */}
-        <button
-          ref={scrollDownRef}
-          onClick={triggerFlyThrough}
-          className="absolute bottom-6 sm:bottom-8 left-6 sm:left-10 lg:left-14 z-20 flex items-center space-x-3 text-[11px] font-mono uppercase tracking-[0.25em] text-[#8a8a88] hover:text-white transition-colors cursor-pointer group"
-        >
-          <div className="w-5 h-[1px] bg-white/30 group-hover:w-8 group-hover:bg-[#F5B800] transition-all" />
-          <span>Scroll Down</span>
-          <div className="w-1.5 h-1.5 rounded-full bg-[#F5B800] animate-pulse" />
-        </button>
       </div>
 
       {/* ==============================================================
-          LAYER 3: BRIGHT WARM-WHITE FLASH OVERLAY (z-30)
+          LAYER 3: BRIGHT WARM-WHITE / CYAN FLASH OVERLAY (z-30)
           Builds to 1.0 at 2.2s, then fades to 0.0 over 0.8s as lift emerges.
       ============================================================== */}
       <div
@@ -622,7 +689,7 @@ export default function PortalHero() {
         className="fixed inset-0 z-30 pointer-events-none opacity-0 will-change-transform"
         style={{
           background:
-            'radial-gradient(circle at 69.2% 45.2%, #ffffff 0%, #fffef4 40%, #fbf3d8 75%, rgba(245, 184, 0, 0.45) 100%)',
+            'radial-gradient(circle at 69.2% 45.2%, #ffffff 0%, #f4fcff 40%, #e2f7ff 75%, rgba(143, 232, 255, 0.45) 100%)',
         }}
       />
     </div>

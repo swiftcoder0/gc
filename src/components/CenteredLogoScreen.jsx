@@ -16,7 +16,7 @@ export default function CenteredLogoScreen() {
       <div 
         className="pointer-events-none absolute inset-0 opacity-25"
         style={{
-          background: `radial-gradient(circle at 50% 50%, ${config.colors.goldGlow} 0%, rgba(11, 11, 11, 0) 60%)`,
+          background: `radial-gradient(circle at 50% 50%, ${config.colors.glow} 0%, rgba(11, 11, 11, 0) 60%)`,
         }}
       />
 
@@ -24,7 +24,7 @@ export default function CenteredLogoScreen() {
       <div className="absolute top-6 right-6 z-20">
         <button
           onClick={openMemberLogin}
-          className="px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-300 border border-[#F5B800]/40 text-[#F5B800] hover:text-white hover:border-[#F5B800] hover:bg-[#F5B800]/10 hover:shadow-[0_0_15px_rgba(245,184,0,0.3)] active:scale-95"
+          className="px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-300 border border-[#8FE8FF]/40 text-[#8FE8FF] hover:text-white hover:border-[#8FE8FF] hover:bg-[#8FE8FF]/10 hover:shadow-[0_0_15px_rgba(143,232,255,0.3)] active:scale-95"
           title="Access Member & Admin Portal"
         >
           Portal Login →
@@ -37,7 +37,7 @@ export default function CenteredLogoScreen() {
           {/* Subtle Outer Glow Ring */}
           <div 
             className="absolute -inset-4 rounded-full opacity-40 blur-xl transition-opacity duration-700 group-hover:opacity-75"
-            style={{ background: config.colors.goldGlow }}
+            style={{ background: config.colors.glow }}
           />
 
           {/* Real Logo File */}
@@ -69,7 +69,7 @@ export default function CenteredLogoScreen() {
 
       {/* Bottom Center: Minimal Status Indicator */}
       <div className="absolute bottom-6 text-[10px] font-mono tracking-[0.3em] uppercase text-zinc-600">
-        FOUNDERS ARE BUILT <span className="text-[#F5B800]">HERE.</span>
+        FOUNDERS ARE BUILT <span className="text-[#8FE8FF]">HERE.</span>
       </div>
     </div>
   );
