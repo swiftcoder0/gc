@@ -886,7 +886,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 {/* Real Logo Left Half (transparent PNG / mix-blend-mode: screen, NO black box) */}
                 <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 pointer-events-none z-20 flex items-center justify-center">
                   <img
-                    src="/images/gc-logo.png"
+                    src="/images/gc-logo-transparent.png"
                     alt="GC Logo Left"
                     className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(245,184,0,0.65)]"
                     style={{ mixBlendMode: 'screen' }}
@@ -910,7 +910,7 @@ export default function ElevatorLobby({ onBackToPortal }) {
                 {/* Real Logo Right Half (transparent PNG / mix-blend-mode: screen, NO black box) */}
                 <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 pointer-events-none z-20 flex items-center justify-center">
                   <img
-                    src="/images/gc-logo.png"
+                    src="/images/gc-logo-transparent.png"
                     alt="GC Logo Right"
                     className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(245,184,0,0.65)]"
                     style={{ mixBlendMode: 'screen' }}
@@ -985,6 +985,30 @@ export default function ElevatorLobby({ onBackToPortal }) {
         className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden opacity-0 select-none"
         style={{ transform: 'scale(0.22)', transformOrigin: 'center center' }}
       >
+        {/* Floor 04 Background: Final Cube Screen (Used ONLY on Floor 04) */}
+        {activeFloorContent === '04' && (
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+            <img
+              src="/images/floor-04-skyline.jpg"
+              alt="Floor 04 Cube Skyline"
+              className="w-full h-full object-cover object-right"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+          </div>
+        )}
+
+        {/* Floor 03 Background: Project Archive */}
+        {activeFloorContent === '03' && (
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-25">
+            <img
+              src="/images/floor-03-archive.jpg"
+              alt="Floor 03 Archive"
+              className="w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
+          </div>
+        )}
+
         <div className="relative w-full h-full flex flex-col justify-between p-6 sm:p-12 lg:p-20 overflow-y-auto">
 
           {/* Top Bar inside Content Screen: Back to Lift Button & Floor Badge */}

@@ -6,45 +6,69 @@ import ElevatorLobby from './ElevatorLobby';
 
 /**
  * PortalHero — Screen 1: The Portal
- * Direct cinematic forward plunge straight under and through the concentric portal rings.
- * - Glowing white rings in the artwork naturally illuminate on button hover
- * - Zero artificial floating blobs beside the ring
- * - Zero blinding white flashes — direct seamless transition into the lobby
+ * Continuous 3-second transition into The Gotham Elevator:
+ * 1) Camera zooms toward the centre of the portal. Rings light up from the outside in.
+ * 2) As zoom reaches the centre, light builds to a bright warm-white flash (about 0.4s).
+ * 3) Lift scene fades up out of that flash (lift frame, doors with logo, button panel, starfield),
+ *    with brightness settling down to normal over about 0.8s.
+ * 4) Zero intermediate cube, image, or placeholder squares.
+ * 5) Lift scene is pre-mounted and preloaded so nothing pops in.
  */
 export default function PortalHero() {
   const { openMemberLogin, openAdminLogin } = useAuth();
 
-  // State: support direct hash linking (e.g. #lobby, #floor-03, #floor-04)
+  // Support direct hash linking (e.g. #lobby, #floor-03, #floor-04)
   const [currentView, setCurrentView] = useState(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.toLowerCase();
-      if (hash.includes('lobby') || hash.includes('floor') || hash.includes('elevator') || hash.includes('project') || hash.includes('about')) {
+      if (
+        hash.includes('lobby') ||
+        hash.includes('floor') ||
+        hash.includes('elevator') ||
+        hash.includes('project') ||
+        hash.includes('about')
+      ) {
         return 'lobby';
       }
     }
     return 'portal';
   });
+
   const [isHoveringPortalButton, setIsHoveringPortalButton] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Refs for GSAP & Parallax
+  // DOM Refs
   const containerRef = useRef(null);
+  const portalRootRef = useRef(null);
+  const lobbyLayerRef = useRef(null);
   const bgRef = useRef(null);
+  const outerRingRef = useRef(null);
+  const midRingRef = useRef(null);
+  const innerRingRef = useRef(null);
+  const centerGlowRef = useRef(null);
   const fogRef = useRef(null);
   const contentRef = useRef(null);
-  const cityOverlayRef = useRef(null);
-  const blackFadeRef = useRef(null);
+  const headerRef = useRef(null);
+  const scrollDownRef = useRef(null);
+  const warmFlashRef = useRef(null);
 
-  // Check preferences
+  // Preferences
   const isReducedMotion = useRef(false);
   const isMobile = useRef(false);
 
+  // Preload lift assets immediately on mount
   useEffect(() => {
     isReducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     isMobile.current = window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches;
+
+    // Preload lift images into memory
+    ['/images/door-chrome.jpg', '/images/gc-logo.png'].forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
   }, []);
 
-  // 1. Parallax Depth on Mouse Movement
+  // 1. Mouse Parallax on Idle Portal
   useEffect(() => {
     if (currentView !== 'portal') return;
 
@@ -55,7 +79,6 @@ export default function PortalHero() {
       const xNorm = (e.clientX - innerWidth / 2) / (innerWidth / 2); // -1 to 1
       const yNorm = (e.clientY - innerHeight / 2) / (innerHeight / 2); // -1 to 1
 
-      // Layered parallax depth
       if (bgRef.current) {
         gsap.to(bgRef.current, {
           x: xNorm * -14,
@@ -88,21 +111,24 @@ export default function PortalHero() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [currentView, isTransitioning]);
 
-  // 2. Direct Fly-through: Straight through the center of the rings into the lobby
+  // 2. Continuous 3-Second Transition: Portal -> Warm-White Flash -> Elevator Lift
   const triggerFlyThrough = () => {
     if (isTransitioning || currentView === 'lobby') return;
     setIsTransitioning(true);
 
-    // Lighter Mode for Mobile & Reduced Motion
-    if (isReducedMotion.current || isMobile.current) {
-      if (blackFadeRef.current) {
-        gsap.to(blackFadeRef.current, {
+    // prefers-reduced-motion: clean simple short fade
+    if (isReducedMotion.current) {
+      if (warmFlashRef.current) {
+        gsap.to(warmFlashRef.current, {
           opacity: 1,
           duration: 0.3,
+          ease: 'power1.in',
           onComplete: () => {
+            if (portalRootRef.current) portalRootRef.current.style.display = 'none';
+            if (lobbyLayerRef.current) lobbyLayerRef.current.style.opacity = '1';
             setCurrentView('lobby');
             setIsTransitioning(false);
-            gsap.to(blackFadeRef.current, { opacity: 0, duration: 0.3 });
+            gsap.to(warmFlashRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' });
           },
         });
       } else {
@@ -112,71 +138,195 @@ export default function PortalHero() {
       return;
     }
 
-    // Full Cinematic Sequence: Direct Forward Zoom Through the Rings
+    // Full 3.0-Second Continuous Cinematic Sequence
     const tl = gsap.timeline({
       onComplete: () => {
         setCurrentView('lobby');
         setIsTransitioning(false);
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', '#lobby');
+        }
       },
     });
 
-    // Fade out text UI immediately
+    // 0.0s - 0.35s: Fade out hero text content, scroll down hint, and top navigation
     if (contentRef.current) {
-      tl.to(contentRef.current, { opacity: 0, duration: 0.4, ease: 'power2.out' }, 0);
+      tl.to(contentRef.current, { opacity: 0, duration: 0.35, ease: 'power2.out' }, 0);
+    }
+    if (scrollDownRef.current) {
+      tl.to(scrollDownRef.current, { opacity: 0, duration: 0.35, ease: 'power2.out' }, 0);
+    }
+    if (headerRef.current) {
+      tl.to(headerRef.current, { opacity: 0, duration: 0.35, ease: 'power2.out' }, 0);
     }
 
-    // Zoom camera directly forward into the center of the portal rings (Analyzed coordinates: 69.2% 45.2%)
+    // 0.0s - 2.2s: Camera zooms directly toward portal center (69.2% 45.2%)
     if (bgRef.current) {
       tl.to(
         bgRef.current,
         {
-          scale: 6.5,
+          scale: 7.2,
           transformOrigin: '69.2% 45.2%',
           duration: 2.2,
-          ease: 'power3.in',
+          ease: 'power2.in',
         },
         0
       );
     }
 
-    // As you pass through the rings, cross-fade into the city beyond
-    if (cityOverlayRef.current) {
+    // 0.1s - 1.8s: Concentric rings illuminate from OUTSIDE to INSIDE
+    // Outer Ring lights up first
+    if (outerRingRef.current) {
       tl.to(
-        cityOverlayRef.current,
+        outerRingRef.current,
         {
-          opacity: 1,
-          scale: 1.25,
-          duration: 0.65,
-          ease: 'power2.inOut',
+          opacity: 0.9,
+          scale: 1.15,
+          duration: 0.6,
+          ease: 'power1.out',
         },
-        1.55
+        0.2
       );
     }
 
-    // Seamless cinematic dissolve to black right before entering the lobby
-    if (blackFadeRef.current) {
+    // Middle Ring lights up next
+    if (midRingRef.current) {
       tl.to(
-        blackFadeRef.current,
+        midRingRef.current,
         {
-          opacity: 1,
-          duration: 0.35,
-          ease: 'power2.in',
+          opacity: 0.95,
+          scale: 1.25,
+          duration: 0.6,
+          ease: 'power1.out',
         },
-        1.95
+        0.65
       );
+    }
+
+    // Inner Ring lights up with intense brilliant glow
+    if (innerRingRef.current) {
       tl.to(
-        blackFadeRef.current,
+        innerRingRef.current,
         {
-          opacity: 0,
-          duration: 0.4,
+          opacity: 1.0,
+          scale: 1.45,
+          duration: 0.7,
           ease: 'power2.out',
         },
-        2.25
+        1.1
+      );
+    }
+
+    // Central Core light bloom expands
+    if (centerGlowRef.current) {
+      tl.to(
+        centerGlowRef.current,
+        {
+          opacity: 1.0,
+          scale: 4.0,
+          duration: 1.1,
+          ease: 'power2.in',
+        },
+        1.1
+      );
+    }
+
+    // 1.8s - 2.2s (about 0.4s): Light builds into a bright warm-white flash
+    if (warmFlashRef.current) {
+      tl.to(
+        warmFlashRef.current,
+        {
+          opacity: 1.0,
+          duration: 0.4,
+          ease: 'power2.in',
+        },
+        1.8
+      );
+    }
+
+    // At 2.2s: Behind the peak warm-white flash, seamlessly reveal the preloaded lift scene
+    tl.call(() => {
+      if (portalRootRef.current) {
+        portalRootRef.current.style.display = 'none';
+      }
+      if (lobbyLayerRef.current) {
+        lobbyLayerRef.current.style.opacity = '1';
+        lobbyLayerRef.current.style.pointerEvents = 'auto';
+        gsap.set(lobbyLayerRef.current, { filter: 'brightness(1.8)' });
+      }
+    }, null, 2.2);
+
+    // 2.2s - 3.0s (about 0.8s): The lift scene fades up out of that flash,
+    // and the brightness settles down to normal over about 0.8s
+    if (warmFlashRef.current) {
+      tl.to(
+        warmFlashRef.current,
+        {
+          opacity: 0.0,
+          duration: 0.8,
+          ease: 'power2.out',
+        },
+        2.2
+      );
+    }
+
+    if (lobbyLayerRef.current) {
+      tl.to(
+        lobbyLayerRef.current,
+        {
+          filter: 'brightness(1.0)',
+          duration: 0.8,
+          ease: 'power2.out',
+        },
+        2.2
       );
     }
   };
 
-  // 3. Scroll Down Once Trigger
+  // 3. Smooth return back to Portal from Lift
+  const handleBackToPortal = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+
+    if (warmFlashRef.current) {
+      gsap.to(warmFlashRef.current, {
+        opacity: 0.5,
+        duration: 0.25,
+        onComplete: () => {
+          if (lobbyLayerRef.current) {
+            lobbyLayerRef.current.style.opacity = '0';
+            lobbyLayerRef.current.style.pointerEvents = 'none';
+          }
+          if (portalRootRef.current) {
+            portalRootRef.current.style.display = 'block';
+            portalRootRef.current.style.opacity = '1';
+          }
+          if (bgRef.current) {
+            gsap.set(bgRef.current, { scale: 1.03, x: 0, y: 0 });
+          }
+          if (outerRingRef.current) gsap.set(outerRingRef.current, { opacity: 0.15, scale: 1.0 });
+          if (midRingRef.current) gsap.set(midRingRef.current, { opacity: 0.2, scale: 1.0 });
+          if (innerRingRef.current) gsap.set(innerRingRef.current, { opacity: 0.35, scale: 1.0 });
+          if (centerGlowRef.current) gsap.set(centerGlowRef.current, { opacity: 0.25, scale: 1.0 });
+          if (contentRef.current) gsap.set(contentRef.current, { opacity: 1.0 });
+          if (scrollDownRef.current) gsap.set(scrollDownRef.current, { opacity: 1.0 });
+          if (headerRef.current) gsap.set(headerRef.current, { opacity: 1.0 });
+
+          setCurrentView('portal');
+          setIsTransitioning(false);
+          if (typeof window !== 'undefined') {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+          gsap.to(warmFlashRef.current, { opacity: 0, duration: 0.35 });
+        },
+      });
+    } else {
+      setCurrentView('portal');
+      setIsTransitioning(false);
+    }
+  };
+
+  // 4. Scroll Down Gesture Trigger
   useEffect(() => {
     if (currentView !== 'portal') return;
 
@@ -210,230 +360,271 @@ export default function PortalHero() {
     };
   }, [currentView, isTransitioning]);
 
-  // View: The Gotham Elevator Lobby (Screen 2)
-  if (currentView === 'lobby') {
-    return (
-      <ElevatorLobby
-        onBackToPortal={() => {
-          setCurrentView('portal');
-          setIsTransitioning(false);
-        }}
-      />
-    );
-  }
-
-  // View: The Portal (Screen 1)
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[100dvh] min-h-[650px] bg-[#0b0b0b] text-[#e8e8e6] overflow-hidden select-none font-sans"
+      className="relative w-full h-[100dvh] min-h-[640px] bg-[#0b0b0b] text-[#e8e8e6] overflow-hidden select-none font-sans"
     >
-      {/* 1. Fullscreen Background Image with Parallax & Hover Glow */}
+      {/* ==============================================================
+          LAYER 1: PRE-MOUNTED ELEVATOR LOBBY
+          Pre-rendered & preloaded underneath so nothing pops in.
+          Canvas starfield, doors, and car frame are ready instantly.
+      ============================================================== */}
       <div
-        ref={bgRef}
-        className="absolute inset-0 z-0 will-change-transform scale-[1.03] transition-[filter] duration-700 ease-out"
+        ref={lobbyLayerRef}
+        className="absolute inset-0 z-0 transition-[filter] duration-700"
         style={{
-          filter: isHoveringPortalButton
-            ? 'brightness(1.22) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.25))'
-            : 'brightness(1.0) contrast(1.0)',
+          opacity: currentView === 'lobby' ? 1 : 0,
+          pointerEvents: currentView === 'lobby' && !isTransitioning ? 'auto' : 'none',
         }}
       >
-        <img
-          src="/images/portal-hall.jpg"
-          alt="Gotham Collage Portal Hall"
-          className="w-full h-full object-cover object-center pointer-events-none"
-        />
-
-        {/* Left-side darkness gradient so text is cleanly readable */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0b]/85 via-45% to-transparent pointer-events-none" />
-
-        {/* Top subtle vignette for navigation contrast */}
-        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#0b0b0b]/90 via-[#0b0b0b]/40 to-transparent pointer-events-none" />
-
-        {/* Bottom edge fade */}
-        <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
+        <ElevatorLobby onBackToPortal={handleBackToPortal} />
       </div>
 
-      {/* 2. White Light Glow Directly Inside the Circular Ring Opening (X: 69.2%, Y: 45.2%) */}
+      {/* ==============================================================
+          LAYER 2: PORTAL HERO SCENE (on top, z-10)
+      ============================================================== */}
       <div
-        className={`pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ${
-          isHoveringPortalButton ? 'opacity-90 scale-130' : 'opacity-25 scale-100'
-        }`}
-        style={{ left: '69.2%', top: '45.2%' }}
+        ref={portalRootRef}
+        className="absolute inset-0 z-10 overflow-hidden"
+        style={{
+          display: currentView === 'lobby' && !isTransitioning ? 'none' : 'block',
+          pointerEvents: currentView === 'portal' && !isTransitioning ? 'auto' : 'none',
+        }}
       >
+        {/* Fullscreen Background Image with Concentric Portal Rings */}
         <div
-          className="w-24 h-24 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-full blur-2xl"
+          ref={bgRef}
+          className="absolute inset-0 z-0 will-change-transform scale-[1.03] transition-[filter] duration-700 ease-out"
           style={{
-            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 40%, transparent 70%)',
+            filter: isHoveringPortalButton
+              ? 'brightness(1.22) contrast(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.25))'
+              : 'brightness(1.0) contrast(1.0)',
           }}
-        />
-      </div>
+        >
+          <img
+            src="/images/portal-hall.jpg"
+            alt="Gotham Collage Portal Hall"
+            className="w-full h-full object-cover object-center pointer-events-none"
+          />
 
-      {/* 3. Fog Layer with Independent Parallax Speed */}
-      <div
-        ref={fogRef}
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-64 z-10 opacity-30 will-change-transform"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.08) 0%, transparent 70%)',
-        }}
-      />
+          {/* Concentric Portal Light Rings (Centered at 69.2% X, 45.2% Y) */}
+          <div
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: '69.2%', top: '45.2%' }}
+          >
+            {/* Outer Ring */}
+            <div
+              ref={outerRingRef}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] rounded-full border border-white/40 shadow-[0_0_35px_rgba(255,255,255,0.4),inset_0_0_30px_rgba(255,255,255,0.25)] transition-opacity duration-500 ${
+                isHoveringPortalButton ? 'opacity-40' : 'opacity-15'
+              }`}
+            />
 
-      {/* 3. Cross-fade City Skyline Overlay for Seamless Transition */}
-      <div
-        ref={cityOverlayRef}
-        className="pointer-events-none absolute inset-0 z-20 opacity-0 will-change-transform"
-      >
-        <img
-          src="/images/portal-city.jpg"
-          alt="Gotham City Beyond"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-[#0b0b0b]/30" />
-      </div>
+            {/* Middle Ring */}
+            <div
+              ref={midRingRef}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-[#F5B800]/50 shadow-[0_0_40px_rgba(245,184,0,0.5),inset_0_0_30px_rgba(245,184,0,0.3)] transition-opacity duration-500 ${
+                isHoveringPortalButton ? 'opacity-60' : 'opacity-20'
+              }`}
+            />
 
-      {/* 4. Smooth Cinematic Black Dissolve Overlay */}
-      <div
-        ref={blackFadeRef}
-        className="pointer-events-none fixed inset-0 z-50 bg-[#0b0b0b] opacity-0"
-      />
+            {/* Inner Core Ring */}
+            <div
+              ref={innerRingRef}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-2 border-white shadow-[0_0_50px_rgba(255,255,255,0.9),inset_0_0_25px_rgba(255,255,255,0.7)] transition-opacity duration-500 ${
+                isHoveringPortalButton ? 'opacity-85' : 'opacity-35'
+              }`}
+            />
 
-      {/* 5. Top Navigation Bar */}
-      <header className="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-6 flex items-center justify-between">
-        {/* Left: Logo + GOTHAM COLLAGE */}
-        <a href="/" className="flex items-center space-x-3 group">
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/60 border border-white/20 p-0.5 flex items-center justify-center group-hover:border-[#F5B800]/50 transition-colors">
-            <img
-              src="/images/gc-logo.png"
-              alt="GC"
-              className="w-full h-full object-contain"
+            {/* Core Center Glow Bloom */}
+            <div
+              ref={centerGlowRef}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-36 sm:h-36 rounded-full blur-2xl transition-all duration-700 ${
+                isHoveringPortalButton ? 'opacity-90 scale-130' : 'opacity-25 scale-100'
+              }`}
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(245,184,0,0.35) 45%, transparent 75%)',
+              }}
             />
           </div>
-          <span className="font-display text-xs sm:text-sm font-extrabold uppercase tracking-[0.22em] text-[#e8e8e6] group-hover:text-white transition-colors">
-            GOTHAM COLLAGE
-          </span>
-        </a>
 
-        {/* Centre: Nav Links (Projects / The Elevator / About / Join Now) */}
-        <nav className="hidden md:flex items-center space-x-8 text-xs font-mono uppercase tracking-widest text-[#a1a1aa]">
-          {config.nav.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={(e) => {
-                if (item.label === 'The Elevator') {
-                  e.preventDefault();
-                  triggerFlyThrough();
-                }
-              }}
-              target={item.external ? '_blank' : undefined}
-              rel={item.external ? 'noopener noreferrer' : undefined}
-              className={`transition-colors duration-200 hover:text-white ${
-                item.label === 'Join Now' ? 'text-zinc-300 font-semibold hover:text-[#F5B800]' : ''
-              }`}
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
+          {/* Left-side darkness gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b0b] via-[#0b0b0b]/85 via-45% to-transparent pointer-events-none" />
 
-        {/* Right: Sign In (Member & Admin) + Gold-outlined "Enter Portal" button */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
-          {/* Sign In Dropdown */}
-          <div className="relative group">
-            <button
-              onClick={openMemberLogin}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white border border-white/15 hover:border-white/35 bg-black/50 hover:bg-black/80 transition-all cursor-pointer flex items-center space-x-1.5 shadow-md"
-            >
-              <span>Sign In</span>
-              <span className="text-[9px] text-[#71717a] group-hover:text-white transition-colors">▾</span>
-            </button>
-            <div className="absolute right-0 mt-2 w-44 py-1.5 bg-[#121215]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+          {/* Top subtle vignette */}
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#0b0b0b]/90 via-[#0b0b0b]/40 to-transparent pointer-events-none" />
+
+          {/* Bottom edge fade */}
+          <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0b0b0b] to-transparent pointer-events-none" />
+        </div>
+
+        {/* Ambient Fog Layer */}
+        <div
+          ref={fogRef}
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-64 z-10 opacity-30 will-change-transform"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.08) 0%, transparent 70%)',
+          }}
+        />
+
+        {/* Top Navigation Bar */}
+        <header
+          ref={headerRef}
+          className="relative z-30 w-full px-6 sm:px-10 lg:px-14 py-6 flex items-center justify-between"
+        >
+          {/* Left: Logo + GOTHAM COLLAGE */}
+          <a href="/" className="flex items-center space-x-3 group">
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/60 border border-white/20 p-0.5 flex items-center justify-center group-hover:border-[#F5B800]/50 transition-colors">
+              <img
+                src="/images/gc-logo.png"
+                alt="GC"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="font-display text-xs sm:text-sm font-extrabold uppercase tracking-[0.22em] text-[#e8e8e6] group-hover:text-white transition-colors">
+              GOTHAM COLLAGE
+            </span>
+          </a>
+
+          {/* Centre: Nav Links (Projects / The Elevator / About / Join Now) */}
+          <nav className="hidden md:flex items-center space-x-8 text-xs font-mono uppercase tracking-widest text-[#a1a1aa]">
+            {config.nav.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={(e) => {
+                  if (item.label === 'The Elevator') {
+                    e.preventDefault();
+                    triggerFlyThrough();
+                  }
+                }}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                className={`transition-colors duration-200 hover:text-white ${
+                  item.label === 'Join Now' ? 'text-zinc-300 font-semibold hover:text-[#F5B800]' : ''
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Right: Sign In (Member & Admin) + Gold-outlined "Enter Portal" button */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            {/* Sign In Dropdown */}
+            <div className="relative group">
               <button
                 onClick={openMemberLogin}
-                className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#F5B800] transition-colors cursor-pointer"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:text-white border border-white/15 hover:border-white/35 bg-black/50 hover:bg-black/80 transition-all cursor-pointer flex items-center space-x-1.5 shadow-md"
               >
-                Member Portal
+                <span>Sign In</span>
+                <span className="text-[9px] text-[#71717a] group-hover:text-white transition-colors">▾</span>
               </button>
-              <button
-                onClick={openAdminLogin}
-                className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-              >
-                Admin Console
-              </button>
+              <div className="absolute right-0 mt-2 w-44 py-1.5 bg-[#121215]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <button
+                  onClick={openMemberLogin}
+                  className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#e8e8e6] hover:bg-white/10 hover:text-[#F5B800] transition-colors cursor-pointer"
+                >
+                  Member Portal
+                </button>
+                <button
+                  onClick={openAdminLogin}
+                  className="w-full text-left px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#a1a1aa] hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                >
+                  Admin Console
+                </button>
+              </div>
             </div>
-          </div>
 
-          <button
-            onClick={triggerFlyThrough}
-            onMouseEnter={() => setIsHoveringPortalButton(true)}
-            onMouseLeave={() => setIsHoveringPortalButton(false)}
-            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border border-[#F5B800] text-[#F5B800] bg-[#0b0b0b]/70 hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_15px_rgba(245,184,0,0.3)] hover:shadow-[0_0_30px_rgba(245,184,0,0.7)] active:scale-95"
-          >
-            Enter Portal
-          </button>
-        </div>
-      </header>
-
-      {/* 6. Hero Content with Foreground Parallax Depth */}
-      <div
-        ref={contentRef}
-        className="relative z-20 h-[calc(100%-140px)] px-6 sm:px-10 lg:px-14 flex flex-col justify-center max-w-2xl lg:max-w-3xl will-change-transform"
-      >
-        <div className="space-y-6 sm:space-y-8 animate-fade-in">
-          {/* Eyebrow Label */}
-          <div className="inline-flex items-center space-x-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800] shadow-[0_0_8px_#F5B800]" />
-            <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.3em] text-[#e8e8e6]/80 font-medium">
-              WELCOME TO GOTHAM COLLAGE
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-[1.08] text-white">
-            IDEAS ARE EVERYWHERE.
-            <br />
-            FOUNDERS ARE BUILT{' '}
-            <span
-              className="text-[#F5B800]"
-              style={{
-                textShadow: '0 0 25px rgba(245,184,0,0.55), 0 0 50px rgba(245,184,0,0.25)',
-              }}
-            >
-              HERE.
-            </span>
-          </h1>
-
-          {/* Sub line */}
-          <p className="text-sm sm:text-base lg:text-lg font-sans text-[#e8e8e6]/85 font-normal max-w-xl leading-relaxed">
-            A venture studio built by ambitious minds.
-          </p>
-
-          {/* Hero Action Button: "Enter Our World →" (Rings glow brighter on hover, triggers fly-through on click) */}
-          <div className="pt-2 sm:pt-4">
             <button
               onClick={triggerFlyThrough}
               onMouseEnter={() => setIsHoveringPortalButton(true)}
               onMouseLeave={() => setIsHoveringPortalButton(false)}
-              className="group inline-flex items-center space-x-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full border border-[#F5B800] bg-[#0b0b0b]/80 text-white font-mono text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_20px_rgba(245,184,0,0.35)] hover:shadow-[0_0_40px_rgba(245,184,0,0.75)] hover:bg-[#F5B800]/20 hover:border-[#F5B800] transition-all duration-300 active:scale-95"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 border border-[#F5B800] text-[#F5B800] bg-[#0b0b0b]/70 hover:bg-[#F5B800]/15 hover:text-white shadow-[0_0_15px_rgba(245,184,0,0.3)] hover:shadow-[0_0_30px_rgba(245,184,0,0.7)] active:scale-95 cursor-pointer"
             >
-              <span className="font-semibold text-white">Enter Our World</span>
-              <span className="text-[#F5B800] transition-transform duration-300 group-hover:translate-x-1.5">
-                →
-              </span>
+              Enter Portal
             </button>
           </div>
+        </header>
+
+        {/* Hero Content with Foreground Parallax Depth */}
+        <div
+          ref={contentRef}
+          className="relative z-20 h-[calc(100%-140px)] px-6 sm:px-10 lg:px-14 flex flex-col justify-center max-w-2xl lg:max-w-3xl will-change-transform"
+        >
+          <div className="space-y-6 sm:space-y-8 animate-fade-in">
+            {/* Eyebrow Label */}
+            <div className="inline-flex items-center space-x-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800] shadow-[0_0_8px_#F5B800]" />
+              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.3em] text-[#e8e8e6]/80 font-medium">
+                WELCOME TO GOTHAM COLLAGE
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-[1.08] text-white">
+              IDEAS ARE EVERYWHERE.
+              <br />
+              FOUNDERS ARE BUILT{' '}
+              <span
+                className="text-[#F5B800]"
+                style={{
+                  textShadow: '0 0 25px rgba(245,184,0,0.55), 0 0 50px rgba(245,184,0,0.25)',
+                }}
+              >
+                HERE.
+              </span>
+            </h1>
+
+            {/* Sub line */}
+            <p className="text-sm sm:text-base lg:text-lg font-sans text-[#e8e8e6]/85 font-normal max-w-xl leading-relaxed">
+              A venture studio built by ambitious minds.
+            </p>
+
+            {/* Hero Action Button: "Enter Our World →" */}
+            <div className="pt-2 sm:pt-4">
+              <button
+                onClick={triggerFlyThrough}
+                onMouseEnter={() => setIsHoveringPortalButton(true)}
+                onMouseLeave={() => setIsHoveringPortalButton(false)}
+                className="group inline-flex items-center space-x-3 px-7 sm:px-9 py-3.5 sm:py-4 rounded-full border border-[#F5B800] bg-[#0b0b0b]/80 text-white font-mono text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_20px_rgba(245,184,0,0.35)] hover:shadow-[0_0_40px_rgba(245,184,0,0.75)] hover:bg-[#F5B800]/20 hover:border-[#F5B800] transition-all duration-300 active:scale-95 cursor-pointer"
+              >
+                <span className="font-semibold text-white">Enter Our World</span>
+                <span className="text-[#F5B800] transition-transform duration-300 group-hover:translate-x-1.5">
+                  →
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Scroll Down Hint */}
+        <button
+          ref={scrollDownRef}
+          onClick={triggerFlyThrough}
+          className="absolute bottom-6 sm:bottom-8 left-6 sm:left-10 lg:left-14 z-20 flex items-center space-x-3 text-[11px] font-mono uppercase tracking-[0.25em] text-[#8a8a88] hover:text-white transition-colors cursor-pointer group"
+        >
+          <div className="w-5 h-[1px] bg-white/30 group-hover:w-8 group-hover:bg-[#F5B800] transition-all" />
+          <span>Scroll Down</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#F5B800] animate-pulse" />
+        </button>
       </div>
 
-      {/* 7. Scroll Down Hint */}
-      <button
-        onClick={triggerFlyThrough}
-        className="absolute bottom-6 sm:bottom-8 left-6 sm:left-10 lg:left-14 z-20 flex items-center space-x-3 text-[11px] font-mono uppercase tracking-[0.25em] text-[#8a8a88] hover:text-white transition-colors cursor-pointer group"
-      >
-        <div className="w-5 h-[1px] bg-white/30 group-hover:w-8 group-hover:bg-[#F5B800] transition-all" />
-        <span>Scroll Down</span>
-        <div className="w-1.5 h-1.5 rounded-full bg-[#F5B800] animate-pulse" />
-      </button>
+      {/* ==============================================================
+          LAYER 3: BRIGHT WARM-WHITE FLASH OVERLAY (z-30)
+          Builds to 1.0 at 2.2s, then fades to 0.0 over 0.8s as lift emerges.
+      ============================================================== */}
+      <div
+        ref={warmFlashRef}
+        className="fixed inset-0 z-30 pointer-events-none opacity-0 will-change-transform"
+        style={{
+          background:
+            'radial-gradient(circle at 69.2% 45.2%, #ffffff 0%, #fffef4 40%, #fbf3d8 75%, rgba(245, 184, 0, 0.45) 100%)',
+        }}
+      />
     </div>
   );
 }
